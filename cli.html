@@ -27,17 +27,17 @@
 
 let versionhistory=`
 Version History:
-2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add message to confirm page has loaded.
+2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
 2025apr8 - first working version
         `;
 
-let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false};
+let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
 
- let languages={ /* here you can define new synonyms for default commands, to create other languages. */
+ let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
-                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
+                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"option"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo"}
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","option":"optionway"}
                 };
     
 
@@ -156,7 +156,7 @@ margin-inline:1px;
       #command-input {
     background: transparent;
     border: none;
-    color: #ccc;/* #33ff33; */
+   /* color: #ccc; *//* #33ff33; */
     font-family: monospace;
     font-size: inherit;
     flex-grow: 1;
@@ -177,7 +177,7 @@ margin-inline:1px;
 
 #command-input:focus::after { /* :focus makes sure no cursor blink when can't type because not in field */
     content: "█";
- color: #ccc;/* #33ff33; */
+ /* color: #ccc; *//* #33ff33; */
     animation: blink 1s steps(1) infinite;
 
 }
@@ -234,7 +234,7 @@ Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for avai
     </div>
 
     <script>
- 
+ const origCRT= defaultOptions["crt"];
      let theseOptions = defaultOptions; /* all acceptable url parameters must be listed here or they will be ignored */
 
     theseOptions["language"]  = theseOptions["language"] || "cli-html";
@@ -250,14 +250,14 @@ Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for avai
     
     if (theseOptions["forceuppercase"]) {document.body.style.textTransform="uppercase"; /* I did NOT make all-caps the default to give you that vintage 1980 personal computer experience, because I'm a nice guy. You kids don't know how good you have it. */}
 
-    
    console.log(theseOptions["prompt"]);
     
     let prompts={"vt100":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
                  "apple":()=>'] ',"pet":()=>"READY."};
     let promptLineBreak="";
     if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}
-   
+
+     if (origCRT!= theseOptions["crt"] ) {setCrt(theseOptions["crt"]);}
     const cmdDict = {};
     // Process each language
     for (const language in languages) {
@@ -362,7 +362,7 @@ commandInput.addEventListener('paste', (e) => {
 
 function updatePrompt() {
     promptSpan.textContent = prompts[theseOptions.prompt]();/*was currentUrl ? `[${currentUrl}]$ ` : '$ '; */
-console.log("P",theseOptions.prompt,prompts[theseOptions.prompt],prompts[theseOptions.prompt]());
+
 }
 
     function toggleInputLine(show) {
@@ -888,6 +888,11 @@ function processNode(node, linkMap, indent = 0) {
     };
     
     function cmdInLang(commandInput) {
+    console.log ("input",commandInput);
+    console.log ("cd",cmdDict);
+    console.log ("l",languages);
+    console.log("to",theseOptions);
+    
     return cmdDict[theseOptions["language"]][commandInput]||commandInput;
     }
     
@@ -925,7 +930,7 @@ function processNode(node, linkMap, indent = 0) {
             console.log(2,commandRaw,command);
             const cmd = commands[command];
             if (!cmd) {
-            return '\n?SYNTAX ERROR';
+            return `\n?SYNTAX ERROR\n\nType '${cmdInLang("help")}' for available commands.`;
                /* return `Command not found: ${command}`; */
             }
             
@@ -954,7 +959,7 @@ function processNode(node, linkMap, indent = 0) {
         versions: () => versionhistory,
        
            help: () => `
-Available commands:
+Available commands in ${theseOptions["language"]}:
 - ${cmdInLang("display")}                    : Show the current page
 - ${cmdInLang("clear")}                      : Clear the terminal
 - ${cmdInLang("links")}                      : Show all links on the current page
@@ -966,29 +971,40 @@ Available commands:
 - ${cmdInLang("versions")}                   : Version history/changelog of this browser
 - ${cmdInLang("exit")}                       : Return to GUI browser
 - [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
-- [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than onscreen
+- [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 - ${cmdInLang("grep")} [pattern]             : Filter output by regular expression. Case-insensitive
 - ${cmdInLang("more")}                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit
 - ${cmdInLang("help")}                       : Show this help message
+- ${cmdInLang("option")} [parameter [value]] : Manually set URL parameters given below from the command line. Leave out value to display current value, leave out both to see all set options.
 
-Startup URL paramaters (starred value is default used when none specified):
+Optional startup URL paramaters (starred value is default used when none specified):
 - prompt  [unix*|pet|apple]                   : The style of command prompt
-- language [cli-html*|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.
+- language [cli-html*|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows commands in the current language.
 - forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience. 
-`,
-        /* note, in unix mode, "screen" should be STDOUT */
+- crt [bw|green|amber]                        : Choose between popular CRT colors.`,
+ option: (option,value) =>   { if (option) {
+ if (value) { theseOptions[option]=value;
+             setCrt(theseOptions["crt"]);
+             updatePrompt();
+             addOutput(option+" is "+theseOptions[option]);
+             if (option=="language") {addOutput(`\nType '${cmdInLang("help")}' for available commands.`);}
+ } }
+                             else
+                             {for (const opt in theseOptions) {theseOptions[opt]?addOutput(opt+" is "+theseOptions[opt]+"\n"):"";} }
+                              
+                              
+                              
+ },
+        
         
 hints: () => `
 - If you ${cmdInLang("open")} a can of worms, you do so at your own risk.
 - You can do as the super user says, not as the super user does.
 - Don't be startled by hollow voices. It's not personal. 
-- There are things here Indiana Jones would be afraid of. 
+- There are things here Indiana Jones would tremble in fear of. 
 `,
               
-            clear: () => {
-                const outputs = terminal.querySelectorAll('.output');
-                outputs.forEach(output => output.remove());
-                return '';
+        crt: (color) => {setCrt(color);
             },
 xyzzy: () => {return "\nA hollow voice says 'fool'";},
             display: async () => {
@@ -1304,6 +1320,19 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
     }
 });
     
+    
+     function setCrt (color) {
+        let thisColor=""; let bkColor="";
+        switch(color) {
+        case 'amber':  thisColor = "#FFBF00";  bkColor="#000"; break;
+        case 'green':  thisColor = "#00CC00";  bkColor="#000"; break;
+        case 'bw':
+        case 'gray':
+        case 'white':
+        case 'monochrome':  thisColor = "#CCCCCC";  bkColor="#000"; break;
+        case 'c64':   thisColor = "#CCF";   bkColor="#006"; }
+        document.body.style.background=bkColor; document.body.style.color=thisColor;}
+    
       function calcAssistance() {
     // Create full-screen overlay
     const overlay = document.createElement('div');
@@ -1493,7 +1522,10 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
     render();
   }
 
+  
+    
  async function initialize() {
+
     toggleInputLine(false);
     let startUrl = document.referrer;
     if (!startUrl || startUrl.split('/')[2].split(':')[0].split(':')[0]!="michaelkupietz.com"){
