@@ -196,7 +196,7 @@ Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for avai
 
     <script>
  
-     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:""};
+     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:"",starturl:""}; /* all acceptable url parameters must be listed here or they will be ignored */
 const urlParams = new URLSearchParams(window.location.search);
 
     for (const key in theseOptions) {
@@ -214,7 +214,7 @@ const urlParams = new URLSearchParams(window.location.search);
     let languages={"cli-html":{},
                    "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions"}
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo"}
                 };
     
     const cmdDict = {};
@@ -227,9 +227,9 @@ const urlParams = new URLSearchParams(window.location.search);
         cmdDict[language][value] = key;
       }
     }
-    console.log("h",cmdDict[theseOptions["language"]]["help"]);
+ 
 
-    document.getElementById("helplang").textContent=cmdDict[theseOptions["language"]]["help"];
+    document.getElementById("helplang").textContent=cmdInLang("help");
 const commandInput = document.getElementById('command-input');
 
 commandInput.addEventListener('keydown', async (e) => {
@@ -911,7 +911,7 @@ function processNode(node, linkMap, indent = 0) {
     
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
         versions: () => `Version History:
-        2025apr9 - add '>' download redirect, versions command, multiple prompts and languages by URL parameter
+        2025apr9 - add '>' download redirect, versions command, multiple prompts/languages/other secret sauce by URL parameter, add message to confirm page has loaded.
         2025apr8 - first working version
         `,
            help: () => `Available commands:
@@ -1078,7 +1078,10 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
                 return commands.open(currentLinks[index].href);
             },
 refresh: async () => {return commands.open(currentUrl, false, true);},
-           open: async (url, addToHistory = true, refresh=false) => {
+           
+        
+        
+        open: async (url, addToHistory = true, refresh=false) => {
     if (!url) return 'Error: Please provide a URL';
 
     if (!url.startsWith('http')) {
@@ -1127,6 +1130,7 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
         
         updatePrompt();
         console.log('Returning content length:', content ? content.length : 'undefined');
+       if (content) {addOutput( url+" loaded, "+ content.length+" bytes received");}
         return content || 'Error: No content processed';
     } catch (err) {
         currentUrl = '';
@@ -1262,13 +1266,30 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
         sel.addRange(range);
     }
 });
-
-    async function initialize() {
+ async function initialize() {
     toggleInputLine(false);
     let startUrl = document.referrer;
     if (!startUrl || startUrl.split('/')[2].split(':')[0].split(':')[0]!="michaelkupietz.com"){
         startUrl = window.location.origin;
     }
+    originalURL = startUrl;
+    await commands.open(theseOptions["starturl"]?theseOptions["starturl"]:startUrl);
+   /* addOutput("Enter 'display' to view the page or 'links' to see available links."); */
+    toggleInputLine(true);
+}
+
+    async function zinitialize() {
+    toggleInputLine(false);
+    let startUrl="";
+    if (theseOptions["starturl"]==undefined) {startUrl = theseOptions["starturl"];}
+    else
+    {
+    let startUrl = document.referrer;
+    if (!startUrl || startUrl.split('/')[2].split(':')[0].split(':')[0]!="michaelkupietz.com"){
+        startUrl = window.location.origin;
+    }
+    }
+    
     originalURL = startUrl;
     await commands.open(startUrl);
    /* addOutput("Enter 'display' to view the page or 'links' to see available links."); */
