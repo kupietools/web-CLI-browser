@@ -123,7 +123,7 @@ margin-inline:1px;
         #input-line {
             display: flex;
             align-items: initial ; /*center; caused problems if input wrapped*/
-            margin-top: 10px;
+            margin-top: 1rem;
         }
         /* #prompt { NO makes input text shift 8px to the right, then move left when line is entered
             margin-right: 8px;
@@ -210,7 +210,7 @@ const urlParams = new URLSearchParams(window.location.search);
     
     let prompts={"vt100":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
                  "apple":()=>'] ',"pet":()=>"READY."};
-    if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";}
+    if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}
     let languages={"cli-html":{},
                    "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
@@ -240,7 +240,7 @@ commandInput.addEventListener('keydown', async (e) => {
         
         if (commandLine) {
             commandHistory.push(commandLine);
-            addOutput(`${promptSpan.textContent}${commandLine}`);
+            addOutput(`\n${promptSpan.textContent}${promptLineBreak}${commandLine}`);
             
             const result = await executeCommand(commandLine);
             if (result) {
@@ -910,11 +910,13 @@ function processNode(node, linkMap, indent = 0) {
     
     
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
-        versions: () => `Version History:
-        2025apr9 - add '>' download redirect, versions command, multiple prompts/languages/other secret sauce by URL parameter, add message to confirm page has loaded.
-        2025apr8 - first working version
+        versions: () => `
+Version History:
+2025apr9 - add '>' download redirect, versions command, multiple prompts/languages/other secret sauce by URL parameter, add message to confirm page has loaded.
+2025apr8 - first working version
         `,
-           help: () => `Available commands:
+           help: () => `
+Available commands:
 - ${cmdInLang("display")}                    : Show the current page
 - ${cmdInLang("clear")}                      : Clear the terminal
 - ${cmdInLang("links")}                      : Show all links on the current page
@@ -922,7 +924,7 @@ function processNode(node, linkMap, indent = 0) {
 - ${cmdInLang("back")}                       : Go back to the previous page
 - ${cmdInLang("forward")}                    : Go forward to the next page
 - ${cmdInLang("refresh")}                    : Reload last loaded page
-- ${cmdInLang("hints")}                      : A mysterious command, I don&apos;t know what it does.'
+- ${cmdInLang("hints")}                      : A mysterious command, I don't know what it does.
 - ${cmdInLang("versions")}                   : Version history/changelog of this browser
 - ${cmdInLang("exit")}                       : Return to GUI browser
 - [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
@@ -941,10 +943,7 @@ hints: () => `
 - You can do as the super user says, not as the super user does.
 - Don't be startled by hollow voices. 
 `,
-            
-
-        
-            
+              
             clear: () => {
                 const outputs = terminal.querySelectorAll('.output');
                 outputs.forEach(output => output.remove());
@@ -998,7 +997,8 @@ xyzzy: () => {return "A hollow voice says 'fool'";},
     line.style.caretColor = '#3f3';
     line.style.verticalAlign = 'top'; // Prevent vertical movement
 if (firstSudo == true) {
-    addOutput(`\nWe trust you have received the usual lecture from the local System
+    addOutput(`
+We trust you have received the usual lecture from the local System
 Administrator. It usually boils down to these three things:
 
     #1) Respect the privacy of others.
