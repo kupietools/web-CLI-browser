@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <!-- Thanks for your curiosity, ya big ol' geek! michaelkupietz.com CLI interface by Michael Kupietz CLI@michaelkupietz.com -->
+<!-- Much thanks to the Indieweb Homebrew Website Club Europe/London for much inspiration and input -->
 <!-- Copyright (C) 2025  Michael E Kupietz.
 
     This program is free software: you can redistribute it and/or modify
@@ -24,12 +25,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&family=VT323&display=swap" rel="stylesheet" -->
 
  <meta charset="UTF-8">
-<style>
-        body {
+<style id="bodystyle">/* styles that shouldn't be in downoad files go here. */
+ body {
      
-    background: #1a1a1a;
-    color: #ccc; /* #3f3;*/ /* dimmer base green */
-    font-family: monospace;
+  
     margin: 0;
     padding: 20px;
     height: 100vh;
@@ -42,7 +41,12 @@
   font-style: normal;
         */
 }
-
+</style>
+<style id="cli_doc_style">
+       
+body {  background: #1a1a1a;
+    color: #ccc; /* #3f3;*/ /* dimmer base green */
+font-family: monospace;}
 .text-title {
     color: #5af; /* bright blue */
 }
@@ -426,7 +430,37 @@ function updatePrompt() {
     };
 }
     
+    
+    /**
+   * Triggers browser file download with specified content
+   * @param {string} output - Content to be downloaded
+   * @param {string} filename - Name of the file to be downloaded
+   */
+  function download_txt(output, myFile) {
+    // Create a blob with the output content
+  thisStyle=document.getElementById("cli_doc_style").innerHTML;
+  output='<!doctype HTML><html><head><style>'+thisStyle+'</style><body>'+output.replace(/(?:\r\n|\r|\n)/g,"<br>")+'</body></html>';
+    const blob = new Blob([output], { type: 'text/html' });
 
+    // Create a URL for the blob
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary anchor element
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = myFile;
+
+    // Append to the document, click it, then remove it
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+   return blob.size+" bytes written for download";
+  }
 async function fetchWithRetry(url) {
     let lastError;
     const loadingIndicator = addOutput(`Loading ${url}... waiting for data (0s)`, 'loading');
@@ -778,6 +812,7 @@ function processNode(node, linkMap, indent = 0) {
     
     try {
         const pipes = commandLine.split('|').map(cmd => cmd.trim());
+    
         let output = '';
         
         for (let i = 0; i < pipes.length; i++) {
@@ -785,7 +820,10 @@ function processNode(node, linkMap, indent = 0) {
                 return '';
             }
 
-            const [command, ...args] = pipes[i].split(' ');
+            const [commandRaw, redirect, ...redirectArgs ] = pipes[i].split('>').map(cmd => cmd.trim());
+    
+        
+            const [command, ...args] = commandRaw.split(' ');
             
             if (command === 'more') {
                 if (!output) {
@@ -793,11 +831,12 @@ function processNode(node, linkMap, indent = 0) {
                 }
                 currentMoreOutput = createMoreHandler(output);
                 return currentMoreOutput.next();
+            console.log(1,commandRaw,command);
             }
-            
+            console.log(2,commandRaw,command);
             const cmd = commands[command];
             if (!cmd) {
-            return '?SYNTAX ERROR';
+            return '\n?SYNTAX ERROR';
                /* return `Command not found: ${command}`; */
             }
             
@@ -807,7 +846,7 @@ function processNode(node, linkMap, indent = 0) {
             }
             
             const result = await cmd(...args);
-            output = result || '';
+            output = (redirect==undefined)?(result || ''):download_txt(result,redirect);
         }
         
         return output;
@@ -819,7 +858,14 @@ function processNode(node, linkMap, indent = 0) {
         }
     }
 }  
+    
+    
+    
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
+        versions: () => `Version History:
+        2025apr9 - add '>' download redirect, versions command
+        2025apr8 - first working version
+        `;
            help: () => `Available commands:
 - display                    : Show the current page
 - clear                      : Clear the terminal
@@ -828,11 +874,24 @@ function processNode(node, linkMap, indent = 0) {
 - back                       : Go back to the previous page
 - forward                    : Go forward to the next page
 - refresh                    : Reload last loaded page
+- hints                      : A mysterious command, I don&apos;t know what it does.'
+- versions                   : Version history/changelog of this browser
 - exit                       : Return to GUI browser
-- [command1] | [command2]    : Redirect output to another command such as 'grep' or 'more'
-- grep [pattern]             : Filter output by regular expression. Case-insensitive.
-- more                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit.
+- [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
+- [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than onscreen
+- grep [pattern]             : Filter output by regular expression. Case-insensitive
+- more                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit
 - help                       : Show this help message`,
+        /* note, in unix mode, "screen" should be STDOUT */
+        
+hints: () => `
+- If you open a can of worms, you do so at your own risk.
+- You can do as the super user says, not as the super user does.
+- Don't be startled by hollow voices. 
+`,
+            
+
+        
             
             clear: () => {
                 const outputs = terminal.querySelectorAll('.output');
