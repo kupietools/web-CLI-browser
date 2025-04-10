@@ -188,16 +188,48 @@ margin-inline:1px;
     </style>
 </head>
 <body><div id="terminal"><div class="output">*** KUPIETZ ARTS+CODE ***<p>&nbsp;&nbsp;&nbsp;&nbsp;7167 BYTES FREE<p>
-Welcome to CLI browsing mode.<br>Type 'help' for available commands.</div><div id="input-line" class="">
+Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for available commands.</div><div id="input-line" class="">
     <span id="prompt">$ </span>
     <div id="command-input" contenteditable="true" autofocus=""></div>
 </div>
     </div>
 
     <script>
+ 
+     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:""};
+const urlParams = new URLSearchParams(window.location.search);
+
+    for (const key in theseOptions) {
+      if (urlParams.has(key)) {
+        theseOptions[key] = urlParams.get(key);
+      }
+    }
+
     
+   console.log(theseOptions["prompt"]);
     
+    let prompts={"vt100":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
+                 "apple":()=>'] ',"pet":()=>"READY."};
+    if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";}
+    let languages={"cli-html":{},
+                   "unix":{"cd":"open","cat":"display","ls":"links","man":"help","curl":"follow"},
+                 "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions"}
+                };
     
+    const cmdDict = {};
+    // Process each language
+    for (const language in languages) {
+      cmdDict[language] = {};
+      // Create reverse mapping for this language
+      for (const key in languages[language]) {
+        const value = languages[language][key];
+        cmdDict[language][value] = key;
+      }
+    }
+    console.log("h",cmdDict[theseOptions["language"]]["help"]);
+
+    document.getElementById("helplang").textContent=cmdDict[theseOptions["language"]]["help"];
 const commandInput = document.getElementById('command-input');
 
 commandInput.addEventListener('keydown', async (e) => {
@@ -288,7 +320,8 @@ commandInput.addEventListener('paste', (e) => {
       
 
 function updatePrompt() {
-    promptSpan.textContent = currentUrl ? `[${currentUrl}]$ ` : '$ ';
+    promptSpan.textContent = prompts[theseOptions.prompt]();/*was currentUrl ? `[${currentUrl}]$ ` : '$ '; */
+console.log("P",theseOptions.prompt,prompts[theseOptions.prompt],prompts[theseOptions.prompt]());
 }
 
     function toggleInputLine(show) {
@@ -805,6 +838,19 @@ function processNode(node, linkMap, indent = 0) {
     return { content: textContent, links };
 }
 
+    
+    function locCmd(commandInput) {
+   
+    result = (cmdInLang(commandInput)!=commandInput)? "" : (languages[theseOptions["language"]][commandInput] || commandInput); /* make it so when using a language, the original commands fail if alternatives are defined for them */
+    return result;
+  
+    };
+    
+    function cmdInLang(commandInput) {
+    return cmdDict[theseOptions["language"]][commandInput]||commandInput;
+    }
+    
+    
   async function executeCommand(commandLine, canInterrupt = true) {
     isCommandRunning = true;
     currentCommand = { canInterrupt };
@@ -823,15 +869,17 @@ function processNode(node, linkMap, indent = 0) {
             const [commandRaw, redirect, ...redirectArgs ] = pipes[i].split('>').map(cmd => cmd.trim());
     
         
-            const [command, ...args] = commandRaw.split(' ');
+            const [commandInput, ...args] = commandRaw.split(' ');
+        command = locCmd(commandInput) ;
             
             if (command === 'more') {
                 if (!output) {
                     return 'No input to more';
                 }
                 currentMoreOutput = createMoreHandler(output);
+             console.log(1,commandRaw,command);
                 return currentMoreOutput.next();
-            console.log(1,commandRaw,command);
+           
             }
             console.log(2,commandRaw,command);
             const cmd = commands[command];
@@ -863,25 +911,29 @@ function processNode(node, linkMap, indent = 0) {
     
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
         versions: () => `Version History:
-        2025apr9 - add '>' download redirect, versions command
+        2025apr9 - add '>' download redirect, versions command, multiple prompts and languages by URL parameter
         2025apr8 - first working version
-        `;
+        `,
            help: () => `Available commands:
-- display                    : Show the current page
-- clear                      : Clear the terminal
-- links                      : Show all links on the current page
-- follow [num]               : Follow a link by its number
-- back                       : Go back to the previous page
-- forward                    : Go forward to the next page
-- refresh                    : Reload last loaded page
-- hints                      : A mysterious command, I don&apos;t know what it does.'
-- versions                   : Version history/changelog of this browser
-- exit                       : Return to GUI browser
+- ${cmdInLang("display")}                    : Show the current page
+- ${cmdInLang("clear")}                      : Clear the terminal
+- ${cmdInLang("links")}                      : Show all links on the current page
+- ${cmdInLang("follow")} [num]               : Follow a link by its number
+- ${cmdInLang("back")}                       : Go back to the previous page
+- ${cmdInLang("forward")}                    : Go forward to the next page
+- ${cmdInLang("refresh")}                    : Reload last loaded page
+- ${cmdInLang("hints")}                      : A mysterious command, I don&apos;t know what it does.'
+- ${cmdInLang("versions")}                   : Version history/changelog of this browser
+- ${cmdInLang("exit")}                       : Return to GUI browser
 - [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
 - [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than onscreen
-- grep [pattern]             : Filter output by regular expression. Case-insensitive
-- more                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit
-- help                       : Show this help message`,
+- ${cmdInLang("grep")} [pattern]             : Filter output by regular expression. Case-insensitive
+- ${cmdInLang("more")}                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit
+- ${cmdInLang("help")}                       : Show this help message
+
+Startup URL paramaters (capitalized value is default used when none specified):
+- prompt  [UNIX|pet|apple]                   : The style of command prompt
+- language [CLI-HTML|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.`,
         /* note, in unix mode, "screen" should be STDOUT */
         
 hints: () => `
@@ -946,7 +998,7 @@ xyzzy: () => {return "A hollow voice says 'fool'";},
     line.style.caretColor = '#3f3';
     line.style.verticalAlign = 'top'; // Prevent vertical movement
 if (firstSudo == true) {
-    addOutput(`We trust you have received the usual lecture from the local System
+    addOutput(`\nWe trust you have received the usual lecture from the local System
 Administrator. It usually boils down to these three things:
 
     #1) Respect the privacy of others.
