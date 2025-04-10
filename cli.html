@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <!-- Thanks for your curiosity, ya big ol' geek! michaelkupietz.com CLI interface by Michael Kupietz CLI@michaelkupietz.com -->
@@ -34,7 +35,7 @@ let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",for
 
  let languages={ /* here you can define new synonyms for default commands, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
-                   "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
+                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
                  "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo"}
                 };
@@ -951,6 +952,7 @@ function processNode(node, linkMap, indent = 0) {
     
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
         versions: () => versionhistory,
+       
            help: () => `
 Available commands:
 - ${cmdInLang("display")}                    : Show the current page
@@ -969,17 +971,18 @@ Available commands:
 - ${cmdInLang("more")}                       : Paginate output. [space] to continue. Esc, ctrl-c, or q to quit
 - ${cmdInLang("help")}                       : Show this help message
 
-Startup URL paramaters (capitalized value is default used when none specified):
-- prompt  [UNIX|pet|apple]                   : The style of command prompt
-- language [CLI-HTML|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.
-- forceuppercase [true|FALSE]                : Force all uppercase text for that vintage 1980 personal computer experience. 
+Startup URL paramaters (starred value is default used when none specified):
+- prompt  [unix*|pet|apple]                   : The style of command prompt
+- language [cli-html*|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.
+- forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience. 
 `,
         /* note, in unix mode, "screen" should be STDOUT */
         
 hints: () => `
 - If you ${cmdInLang("open")} a can of worms, you do so at your own risk.
 - You can do as the super user says, not as the super user does.
-- Don't be startled by hollow voices. 
+- Don't be startled by hollow voices. It's not personal. 
+- There are things here Indiana Jones would be afraid of. 
 `,
               
             clear: () => {
@@ -1076,7 +1079,7 @@ Administrator. It usually boils down to these three things:
     }
     return '';
 },
-
+ snake: () => {calcAssistance()},
         grep: (pattern, prevOutput) => {
     if (!pattern) {
         return 'Error: grep requires a pattern';
@@ -1300,6 +1303,196 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
         sel.addRange(range);
     }
 });
+    
+      function calcAssistance() {
+    // Create full-screen overlay
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'black';
+    overlay.style.zIndex = '9999';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.fontFamily = 'monospace';
+    overlay.style.color = 'white';
+
+    // container
+    const contentDiv = document.createElement('div');
+    contentDiv.style.width = '80%';
+    contentDiv.style.maxWidth = '800px';
+    contentDiv.style.textAlign = 'center';
+    overlay.appendChild(contentDiv);
+
+    // num display
+    const scoreDisplay = document.createElement('div');
+    scoreDisplay.style.marginBottom = '10px';
+    scoreDisplay.innerText = 'Score: 0';
+    contentDiv.appendChild(scoreDisplay);
+
+    // board
+    const board = document.createElement('pre');
+    board.style.margin = '0';
+    board.style.lineHeight = '1';
+    board.style.backgroundColor = 'black';
+    board.style.border = '1px solid white';
+    board.style.padding = '10px';
+    contentDiv.appendChild(board);
+
+    // Instructions
+    const instructions = document.createElement('div');
+    instructions.innerHTML = 'Use arrow keys to move<br>Press ESC to exit';
+    instructions.style.marginTop = '20px';
+    contentDiv.appendChild(instructions);
+
+    // Add overlay to document
+    document.body.appendChild(overlay);
+
+    // state
+    const width = 40;
+    const height = 20;
+    let snArray = [{x: Math.floor(width/2), y: Math.floor(height/2)}];
+    let direction = {x: 1, y: 0};
+    let targeted = {};
+    let score = 0;
+    let ended = false;
+    let timingLoop;
+
+    // characters
+    const START_TRACE = '@';
+    const END_TRACE = 'O';
+    const TARGET = '*';
+    const EMPTY = ' ';
+    const BORDER = '#';
+
+    // Initialize targeted position
+    createTarget();
+
+    // Handle keyboard input
+    document.addEventListener('keydown', handleKeyPress);
+
+    // Start loop
+    timingLoop = setInterval(update, 150);
+
+    // Function to place targeted at random position
+    function createTarget() {
+      targeted = {
+        x: Math.floor(Math.random() * (width - 2)) + 1,
+        y: Math.floor(Math.random() * (height - 2)) + 1
+      };
+
+      // Make sure targeted doesn't spawn on snArray
+      for (const segment of snArray) {
+        if (segment.x === targeted.x && segment.y === targeted.y) {
+          createTarget();
+          break;
+        }
+      }
+    }
+
+    // Function to update state
+    function update() {
+      if (ended) return;
+
+      // Calculate new head position
+      const head = {
+        x: snArray[0].x + direction.x,
+        y: snArray[0].y + direction.y
+      };
+
+      // Check for collisions
+      if (
+        head.x < 0 || head.x >= width ||
+        head.y < 0 || head.y >= height ||
+        snArray.some(segment => segment.x === head.x && segment.y === head.y)
+      ) {
+        ended = true;
+        clearInterval(timingLoop);
+        board.innerText = `\n\n\n       ACTIVITY COMPLETED\n\n    Your score: ${score}\n\n  Press any key to exit`;
+        document.addEventListener('keydown', exitStage, {once: true});
+        return;
+      }
+
+      // Add new head
+      snArray.unshift(head);
+
+      // Check if targeted eaten
+      if (head.x === targeted.x && head.y === targeted.y) {
+        score += 100000;
+        scoreDisplay.innerText = `Score: ${score}`;
+        createTarget();
+      } else {
+        // Remove tail if no targeted acquired
+        snArray.pop();
+      }
+
+      // Render 
+      render();
+    }
+
+    // Function to render 
+    function render() {
+      let grid = Array(height).fill().map(() => Array(width).fill(EMPTY));
+
+      // Draw border
+      for (let x = 0; x < width; x++) {
+        grid[0][x] = BORDER;
+        grid[height-1][x] = BORDER;
+      }
+      for (let y = 0; y < height; y++) {
+        grid[y][0] = BORDER;
+        grid[y][width-1] = BORDER;
+      }
+
+      // Draw targeted
+      grid[targeted.y][targeted.x] = TARGET;
+
+      // Draw snArray
+      for (let i = 1; i < snArray.length; i++) {
+        grid[snArray[i].y][snArray[i].x] = END_TRACE;
+      }
+      grid[snArray[0].y][snArray[0].x] = START_TRACE;
+
+      // Update board
+      board.innerText = grid.map(row => row.join('')).join('\n');
+    }
+
+    // Function to handle key presses
+    function handleKeyPress(e) {
+      switch (e.key) {
+        case 'ArrowUp':
+          if (direction.y === 0) direction = {x: 0, y: -1};
+          break;
+        case 'ArrowDown':
+          if (direction.y === 0) direction = {x: 0, y: 1};
+          break;
+        case 'ArrowLeft':
+          if (direction.x === 0) direction = {x: -1, y: 0};
+          break;
+        case 'ArrowRight':
+          if (direction.x === 0) direction = {x: 1, y: 0};
+          break;
+        case 'Escape':
+          exitStage();
+          break;
+      }
+    }
+
+    // Function to exit game and remove overlay
+    function exitStage() {
+      clearInterval(timingLoop);
+      document.removeEventListener('keydown', handleKeyPress);
+      document.body.removeChild(overlay);
+    }
+
+    // Initial render
+    render();
+  }
+
  async function initialize() {
     toggleInputLine(false);
     let startUrl = document.referrer;
