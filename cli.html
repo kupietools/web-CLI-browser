@@ -162,17 +162,31 @@ margin-inline:1px;
     0% { opacity: 1; }
     50% { opacity: 0.25; }
 }
-        .output {
+
+
+@keyframes rainbow {
+    0% { color: red; }
+    15% { color: orange; }
+    30% { color: yellow; }
+    45% { color: green; }
+   60% { color: blue; }
+    75% { color: indigo; }
+    90% { color: violet; }
+
+   
+}
+
+ .output {
             margin: 0; /* 10px 0; left blank lines in More */
         }
-        .error {
+.error {
             color: #ff3333;
         }
-        .loading {
-            color: #ffff33; 
-            animation: blink 1s steps(1) infinite;
+.loading {
+            /* color: #ffff33; */
+            animation: blink 1s steps(1) infinite, rainbow 2s  infinite ;
         }
-        .more-prompt {
+.more-prompt {
             position: fixed;
             bottom: 0;
             left: 0;
@@ -196,14 +210,17 @@ Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for avai
 
     <script>
  
-     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:"",starturl:""}; /* all acceptable url parameters must be listed here or they will be ignored */
+     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false}; /* all acceptable url parameters must be listed here or they will be ignored */
 const urlParams = new URLSearchParams(window.location.search);
 
     for (const key in theseOptions) {
-      if (urlParams.has(key)) {
+      if (urlParams.has(key)) { /* this is where urlparams with no key above get disregarded */
         theseOptions[key] = urlParams.get(key);
       }
     }
+    
+    
+    if (theseOptions["forceuppercase"]) {document.body.style.textTransform="uppercase"; /* I did NOT make all-caps the default to give you that vintage 1980 personal computer experience, because I'm a nice guy. You kids don't know how good you have it. */}
 
     
    console.log(theseOptions["prompt"]);
@@ -870,7 +887,7 @@ function processNode(node, linkMap, indent = 0) {
     
         
             const [commandInput, ...args] = commandRaw.split(' ');
-        command = locCmd(commandInput) ;
+        command = locCmd(commandInput.toLowerCase()) ;
             
             if (command === 'more') {
                 if (!output) {
@@ -912,7 +929,7 @@ function processNode(node, linkMap, indent = 0) {
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
         versions: () => `
 Version History:
-2025apr9 - add '>' download redirect, versions command, multiple prompts/languages/other secret sauce by URL parameter, add message to confirm page has loaded.
+2025apr9 - add '>' download redirect, versions command, settings for prompts/languages/force all caps/other secret sauce by URL parameter, add message to confirm page has loaded.
 2025apr8 - first working version
         `,
            help: () => `
@@ -939,7 +956,7 @@ Startup URL paramaters (capitalized value is default used when none specified):
         /* note, in unix mode, "screen" should be STDOUT */
         
 hints: () => `
-- If you open a can of worms, you do so at your own risk.
+- If you ${cmdInLang("open")} a can of worms, you do so at your own risk.
 - You can do as the super user says, not as the super user does.
 - Don't be startled by hollow voices. 
 `,
@@ -949,7 +966,7 @@ hints: () => `
                 outputs.forEach(output => output.remove());
                 return '';
             },
-xyzzy: () => {return "A hollow voice says 'fool'";},
+xyzzy: () => {return "\nA hollow voice says 'fool'";},
             display: async () => {
                 if (!currentUrl) {
                     return 'No page currently loaded.';
@@ -1049,7 +1066,7 @@ Administrator. It usually boils down to these three things:
         const matches = lines.filter(line => regexp.test(line));
         return matches.join('\n');
     } catch (e) {
-        return `Error: Invalid regular expression - ${e.message}`;
+        return `Error: Invalid ${cmdInLang("grep")} expression - ${e.message}`;
     }
 },
 
@@ -1096,17 +1113,14 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
 
     try {
         let content, links;
-        
-        if (pageCache.has(url) && refresh==false) {
+        let gotFromCache=pageCache.has(url) && refresh==false;
+        if (gotFromCache) {
             ({ content, links } = pageCache.get(url));
         } else {
             try {
-                console.log('Fetching URL...');
+               
                 const html = await fetchWithRetry(url);
-                console.log('Got HTML, length:', html.length);
-                console.log('Processing HTML...');
                 const result = await processHTML(html, url);
-                console.log('Processed result:', result);
                 content = result.content;
                 links = result.links;
                 if (content) {
@@ -1129,14 +1143,13 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
         }
         
         updatePrompt();
-        console.log('Returning content length:', content ? content.length : 'undefined');
-       if (content) {addOutput( url+" loaded, "+ content.length+" bytes received");}
-        return content || 'Error: No content processed';
+       if (content && !gotFromCache) {addOutput( url+" loaded, "+ content.length+" bytes received");}
+        return "\n"+(content || 'Error: No content processed');
     } catch (err) {
         currentUrl = '';
         currentLinks = [];
         updatePrompt();
-        return `Error loading ${url}: ${err.message}`;
+        return `\nError loading ${url}: ${err.message}`;
     }
 }
         };
