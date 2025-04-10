@@ -20,11 +20,35 @@
 -->
 
 <head>
+<script>
+
+/* some user-settable defaults */
+
+let versionhistory=`
+Version History:
+2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add message to confirm page has loaded.
+2025apr8 - first working version
+        `;
+
+let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false};
+
+ let languages={ /* here you can define new synonyms for default commands, to create other languages. */
+                 /* Defining a synonym for the command will DISABLE the default form of the command. */
+                   "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
+                 "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo"}
+                };
+    
+
+/* end user settings */
+
+</script>
+
+ <meta charset="UTF-8">
 <!-- link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&family=VT323&display=swap" rel="stylesheet" -->
 
- <meta charset="UTF-8">
 <style id="bodystyle">/* styles that shouldn't be in downoad files go here. */
  body {
      
@@ -210,8 +234,11 @@ Welcome to CLI browsing mode.<br>Type '<span id="helplang">help</span>' for avai
 
     <script>
  
-     let theseOptions = {prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false}; /* all acceptable url parameters must be listed here or they will be ignored */
-const urlParams = new URLSearchParams(window.location.search);
+     let theseOptions = defaultOptions; /* all acceptable url parameters must be listed here or they will be ignored */
+
+    theseOptions["language"]  = theseOptions["language"] || "cli-html";
+    languages[theseOptions["language"]] = languages[theseOptions["language"]] || {};
+    const urlParams = new URLSearchParams(window.location.search);
 
     for (const key in theseOptions) {
       if (urlParams.has(key)) { /* this is where urlparams with no key above get disregarded */
@@ -227,13 +254,9 @@ const urlParams = new URLSearchParams(window.location.search);
     
     let prompts={"vt100":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
                  "apple":()=>'] ',"pet":()=>"READY."};
+    let promptLineBreak="";
     if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}
-    let languages={"cli-html":{},
-                   "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow"},
-                 "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"refresh","ersionsvay":"versions","udosay":"sudo"}
-                };
-    
+   
     const cmdDict = {};
     // Process each language
     for (const language in languages) {
@@ -927,11 +950,7 @@ function processNode(node, linkMap, indent = 0) {
     
     
         const commands = { /* hid - open [url]     : Load a website in text mode from help */
-        versions: () => `
-Version History:
-2025apr9 - add '>' download redirect, versions command, settings for prompts/languages/force all caps/other secret sauce by URL parameter, add message to confirm page has loaded.
-2025apr8 - first working version
-        `,
+        versions: () => versionhistory,
            help: () => `
 Available commands:
 - ${cmdInLang("display")}                    : Show the current page
@@ -952,7 +971,9 @@ Available commands:
 
 Startup URL paramaters (capitalized value is default used when none specified):
 - prompt  [UNIX|pet|apple]                   : The style of command prompt
-- language [CLI-HTML|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.`,
+- language [CLI-HTML|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows all commands in the correct form for that language.
+- forceuppercase [true|FALSE]                : Force all uppercase text for that vintage 1980 personal computer experience. 
+`,
         /* note, in unix mode, "screen" should be STDOUT */
         
 hints: () => `
@@ -1291,23 +1312,6 @@ refresh: async () => {return commands.open(currentUrl, false, true);},
     toggleInputLine(true);
 }
 
-    async function zinitialize() {
-    toggleInputLine(false);
-    let startUrl="";
-    if (theseOptions["starturl"]==undefined) {startUrl = theseOptions["starturl"];}
-    else
-    {
-    let startUrl = document.referrer;
-    if (!startUrl || startUrl.split('/')[2].split(':')[0].split(':')[0]!="michaelkupietz.com"){
-        startUrl = window.location.origin;
-    }
-    }
-    
-    originalURL = startUrl;
-    await commands.open(startUrl);
-   /* addOutput("Enter 'display' to view the page or 'links' to see available links."); */
-    toggleInputLine(true);
-}
 
 
         initialize();
