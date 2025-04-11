@@ -37,7 +37,7 @@ let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",for
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
                  "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"options"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","efreshray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 };
     
 
@@ -968,7 +968,7 @@ Available commands in ${theseOptions["language"]}:
 - ${cmdInLang("back")}                       : Go back to the previous page
 - ${cmdInLang("forward")}                    : Go forward to the next page
 - ${cmdInLang("reload")}                     : Reload last loaded page
-- ${cmdInLang("hints")}                      : A mysterious command, I don't know what it does.
+- ${cmdInLang("hint")}                      : A mysterious command, I don't know what it does.
 - ${cmdInLang("versions")}                   : Version history/changelog of this browser
 - ${cmdInLang("clear")}                      : Clear the terminal
 - ${cmdInLang("exit")}                       : Return to GUI browser
@@ -1000,13 +1000,18 @@ Optional startup URL paramaters (starred value is default used when none specifi
  },
         
         
-hints: () => `
-- If you ${cmdInLang("open")} a can of worms, you do so at your own risk. The garden's walls may grant passage. 
-- You can do as the su say, not as the su do.
-- Don't be startled by hollow voices. It's not personal. 
-- There are things here Indiana Jones would tremble in fear of.
-- In olden days, before CRTs, people used lineprinters. 
-`,
+hint: () => {let hints=[`If you ${cmdInLang("open")} a can of URLs, you do so at your own risk.`,
+                    "You can do as the su say, not as the su do.",
+"Don't be startled by hollow voices. It's not personal.", 
+"There are things here Indiana Jones would tremble in fear of.",
+"Before CRTs, there were lineprinters.",
+                       "For every screen, there is an inversion. (Turn, turn, turn.)",
+                        "Yes, Virginia, there is a Commodore 64 screen setting."
+                       "We can't play snakes & ladders, because we have no ladders."];
+           
+             index=Math.floor(Math.random() * hints.length);
+  return hints[index];
+            },
               
        /*  crt: (color) => {setCrt(color);
             },*/
