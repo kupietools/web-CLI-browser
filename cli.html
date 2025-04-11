@@ -35,9 +35,9 @@ let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",for
 
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
-                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"options"},
-                 "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"openway":"open","earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                 "unix":{"curl":"open","cat":"display","ls":"links","whoami":"where","man":"help","cd":"follow","setopt":"options"},
+                 "basic":{"load":"open","peek":"where","run":"display","list":"links","goto":"follow"},
+                 "piglatin":{"openway":"open","earclay":"clear","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 };
     
 
@@ -89,6 +89,8 @@ text-transform: uppercase;
 .text-quote {
     color: #5ff; /* bright cyan */
 }
+.text-img {
+color:#960;}
 .text-bold {
     color: #f99; /* bright white */
 }
@@ -209,7 +211,7 @@ margin-inline:1px;
         }
 .loading {
             /* color: #ffff33; */
-            animation: blink 1s steps(1) infinite, rainbow 5s  infinite ;
+            animation: blink 1s steps(1) infinite/*, rainbow 5s  infinite */;
         }
 .more-prompt {
             position: fixed;
@@ -736,6 +738,8 @@ function processNode(node, linkMap, indent = 0) {
           content += '\n<!-- 587 -->'+(spacer);
             indent += 1;
             break;
+    case 'img': 
+    content += '<span class="text-img">[img: '+(node.getAttribute('alt') || ((node.src.substring(0,5)=="data:")?(node.src.substring(0,32)+"..."):node.src))+']'; break;
 /*    case 'img': 
  content += "[image "+node.dataset.src+"]"; */
     }
@@ -784,6 +788,7 @@ function processNode(node, linkMap, indent = 0) {
     }
     
     switch (tagName) {
+    case 'img': content += "</span>"; break;
        case 'ul':
         case 'ol':
           content += '\n<!-- 587 -->'+(spacer);
@@ -890,10 +895,7 @@ function processNode(node, linkMap, indent = 0) {
     };
     
     function cmdInLang(commandInput) {
-    console.log ("input",commandInput);
-    console.log ("cd",cmdDict);
-    console.log ("l",languages);
-    console.log("to",theseOptions);
+
     
     return cmdDict[theseOptions["language"]][commandInput]||commandInput;
     }
@@ -970,6 +972,7 @@ Available commands in ${theseOptions["language"]}:
 - ${cmdInLang("reload")}                     : Reload last loaded page
 - ${cmdInLang("hint")}                       : A mysterious command, I don't know what it does.
 - ${cmdInLang("versions")}                   : Version history/changelog of this browser
+- ${cmdInLang("where")}                      : Outputs the URL of the currently loaded page
 - ${cmdInLang("clear")}                      : Clear the terminal
 - ${cmdInLang("exit")}                       : Return to GUI browser
 - [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
@@ -998,7 +1001,8 @@ Optional startup URL paramaters (starred value is default used when none specifi
                               
                               
  },
-        
+       
+        where: ()=>currentUrl,
         
 hint: () => {let hints=[`If you ${cmdInLang("open")} a can of URLs, you do so at your own risk.`,
                     "You can do as the su say, not as the su do.",
