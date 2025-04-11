@@ -25,5 +25,5 @@ Optional startup URL paramaters (starred value is default used when none specifi
 - language [cli-html*|unix|basic|piglatin]    : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
 - prompt  [unix*|pet|apple]                   : The style of command prompt
 - crt [bw|green|amber]                        : Choose between popular CRT colors. There may be some others available
-- forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience
+- forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience. (You can tell I'm a nice guy because I defaulted this to "false".)
 
