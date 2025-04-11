@@ -37,7 +37,7 @@ let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",for
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
                  "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"options"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","efreshray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                 "piglatin":{"openway":"open","earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 };
     
 
@@ -209,7 +209,7 @@ margin-inline:1px;
         }
 .loading {
             /* color: #ffff33; */
-            animation: blink 1s steps(1) infinite, rainbow 2s  infinite ;
+            animation: blink 1s steps(1) infinite, rainbow 5s  infinite ;
         }
 .more-prompt {
             position: fixed;
@@ -968,16 +968,16 @@ Available commands in ${theseOptions["language"]}:
 - ${cmdInLang("back")}                       : Go back to the previous page
 - ${cmdInLang("forward")}                    : Go forward to the next page
 - ${cmdInLang("reload")}                     : Reload last loaded page
-- ${cmdInLang("hint")}                      : A mysterious command, I don't know what it does.
+- ${cmdInLang("hint")}                       : A mysterious command, I don't know what it does.
 - ${cmdInLang("versions")}                   : Version history/changelog of this browser
 - ${cmdInLang("clear")}                      : Clear the terminal
 - ${cmdInLang("exit")}                       : Return to GUI browser
 - [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
 - [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
-- ${cmdInLang("grep")} [pattern]             : Use after pipe (|) to filter output by regular expression. Case-insensitive
 - ${cmdInLang("more")}                       : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
+- ${cmdInLang("grep")} [pattern]             : Use after pipe (|) to filter output by regular expression. Case-insensitive
+- ${cmdInLang("options")} [parameter [value]]: Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 - ${cmdInLang("help")}                       : Show this help message
-- ${cmdInLang("options")} [parameter [value]] : Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 
 Optional startup URL paramaters (starred value is default used when none specified):
 - language [cli-html*|unix|basic|piglatin]    : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
@@ -1006,7 +1006,7 @@ hint: () => {let hints=[`If you ${cmdInLang("open")} a can of URLs, you do so at
 "There are things here Indiana Jones would tremble in fear of.",
 "Before CRTs, there were lineprinters.",
                        "For every screen, there is an inversion. (Turn, turn, turn.)",
-                        "Yes, Virginia, there is a Commodore 64 screen setting."
+                        "Yes, Virginia, there is a Commodore 64 screen setting.",
                        "We can't play snakes & ladders, because we have no ladders."];
            
              index=Math.floor(Math.random() * hints.length);
