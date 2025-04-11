@@ -35,9 +35,9 @@ let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",for
 
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
-                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"option"},
+                 "unix":{"curl":"open","cat":"display","ls":"links","man":"help","cd":"follow","setopt":"options"},
                  "basic":{"load":"open","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","option":"optionway"}
+                 "piglatin":{"earclay":"clear","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","intshay":"hints","inkslay":"links","oremay":"more","efreshray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 };
     
 
@@ -977,15 +977,15 @@ Available commands in ${theseOptions["language"]}:
 - ${cmdInLang("grep")} [pattern]             : Use after pipe (|) to filter output by regular expression. Case-insensitive
 - ${cmdInLang("more")}                       : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
 - ${cmdInLang("help")}                       : Show this help message
-- ${cmdInLang("option")} [parameter [value]] : Manually set URL parameters (given below) from the command line. Leave out value to display current value, leave out both to see all current set values
+- ${cmdInLang("options")} [parameter [value]] : Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 
 Optional startup URL paramaters (starred value is default used when none specified):
+- language [cli-html*|unix|basic|piglatin]    : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
 - prompt  [unix*|pet|apple]                   : The style of command prompt
-- language [cli-html*|unix|basic|piglatin]    : Language set of the commands. The ${cmdInLang("help")} command (whatever it is in the currently selected language) always shows commands in the current language
 - crt [bw|green|amber]                        : Choose between popular CRT colors. There may be some others available
 - forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience
 `, /* extra verbiage: Execute a command with elevated privileges */
- option: (option,value) =>   { if (option) {
+ options: (option,value) =>   { if (option) {
  if (value) { theseOptions[option]=value;
              setCrt(theseOptions["crt"]);
              updatePrompt();
@@ -1004,7 +1004,8 @@ hints: () => `
 - If you ${cmdInLang("open")} a can of worms, you do so at your own risk. The garden's walls may grant passage. 
 - You can do as the su say, not as the su do.
 - Don't be startled by hollow voices. It's not personal. 
-- There are things here Indiana Jones would tremble in fear of. 
+- There are things here Indiana Jones would tremble in fear of.
+- In olden days, before CRTs, people used lineprinters. 
 `,
               
        /*  crt: (color) => {setCrt(color);
@@ -1327,15 +1328,38 @@ reload: async () => {return commands.open(currentUrl, false, true);},
     
      function setCrt (color) {
         let thisColor=""; let bkColor="";
-        switch(color) {
+        if (color=="invert") {
+        document.documentElement.style.filter = ((document.documentElement.style.filter)=="invert()")?"":"invert()";
+        
+       // document.documentElement.style.webkitFilter = ((document.documentElement.style.webkitFilter)=="invert()")?"":"invert()";
+        
+        } else if (color=="lineprinter") {
+         document.documentElement.style.filter ="";
+        document.getElementById("terminal").style.background="";
+         document.getElementById("terminal").style.backgroundImage="linear-gradient(0deg, #380936 25%, #000000 25%, #000000 50%, #380936 50%, #380936 75%, #000000 75%, #000000 100%)";
+        document.getElementById("terminal").style.backgroundSize= "160px 160px";
+        document.getElementById("terminal").style.filter="invert()";
+        document.getElementById("terminal").style.backgroundAttachment="local";
+        
+        }
+     else {
+      document.documentElement.style.filter ="";
+     document.getElementById("terminal").style.background="";
+     document.getElementById("terminal").style.filter="";
+     switch(color) {
+       
         case 'amber':  thisColor = "#FFBF00";  bkColor="#000"; break;
         case 'green':  thisColor = "#00CC00";  bkColor="#000"; break;
+        case 'invert':  thisColor = "#000";  bkColor="#ccc"; break;
         case 'bw':
         case 'gray':
         case 'white':
         case 'monochrome':  thisColor = "#CCCCCC";  bkColor="#000"; break;
-        case 'c64':   thisColor = "#CCF";   bkColor="#006"; }
-        document.body.style.background=bkColor; document.body.style.color=thisColor;}
+        case 'commodore': 
+        case 'commodore64': 
+        case 'c64':   thisColor = "#CCF";     document.getElementById("terminal").style.background="#006"; bkColor="#CCF"; break;}
+        
+        document.body.style.background=bkColor; document.body.style.color=thisColor;}}
     
       function calcAssistance() {
     // Create full-screen overlay
