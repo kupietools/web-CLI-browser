@@ -26,19 +26,20 @@
 
 let versionhistory=`
 Version History:
-2025apr10 - for consistence, have it stop showing page automatically upon load - only use Display to view
+2025apr10 - for consistence, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
 2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
 2025apr8 - first working version
         `;
 
-let defaultOptions={prompt:"vt100",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
+let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
 
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
                  "unix":{"curl":"open","cat":"display","ls":"links","whoami":"where","man":"help","cd":"follow","setopt":"options"},
-                 "basic":{"load":"open","peek":"where","run":"display","list":"links","goto":"follow"},
-                 "piglatin":{"openway":"open","earclay":"clear","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
-                };
+                 "basic":{"load":"open","print":"where","run":"display","list":"links","goto":"follow","poke":"options"},
+                 "pig-latin":{"openway":"open","ackbay":"back","optionsway":"options","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                
+ };
     
 
 /* end user settings */
@@ -254,7 +255,7 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
 
    console.log(theseOptions["prompt"]);
     
-    let prompts={"vt100":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
+    let prompts={"unix":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
                  "apple":()=>'] ',"pet":()=>"READY."};
     let promptLineBreak="";
     if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}
@@ -262,6 +263,9 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
      if (origCRT!= theseOptions["crt"] ) {setCrt(theseOptions["crt"]);}
     const cmdDict = {};
     // Process each language
+
+     languages=Object.assign(languages,addDicts());
+ 
     for (const language in languages) {
       cmdDict[language] = {};
       // Create reverse mapping for this language
@@ -270,9 +274,9 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
         cmdDict[language][value] = key;
       }
     }
- 
-
     document.getElementById("helplang").textContent=cmdInLang("help");
+
+  
 const commandInput = document.getElementById('command-input');
 
 commandInput.addEventListener('keydown', async (e) => {
@@ -353,6 +357,7 @@ commandInput.addEventListener('paste', (e) => {
             const width = Math.floor(terminal.clientWidth / 8);
             return { height, width };
         }
+    
 
         function truncateLines(text, width) {
             return text.split('\n').map(line => 
@@ -360,7 +365,7 @@ commandInput.addEventListener('paste', (e) => {
             ).join('\n');
         }
 
-      
+        
 
 function updatePrompt() {
     promptSpan.textContent = prompts[theseOptions.prompt]();/*was currentUrl ? `[${currentUrl}]$ ` : '$ '; */
@@ -894,10 +899,12 @@ function processNode(node, linkMap, indent = 0) {
   
     };
     
-    function cmdInLang(commandInput) {
+    function cmdInLang(commandInput,description="",length=0) {
 
-    
-    return cmdDict[theseOptions["language"]][commandInput]||commandInput;
+    theCommand=cmdDict[theseOptions["language"]][commandInput]||commandInput;
+    theOutput=theCommand+((theCommand && description)?" ":"")+description;
+    padding=Math.max(length-theOutput.length,0);
+    return theOutput+" ".repeat(padding);
     }
     
     
@@ -962,41 +969,43 @@ function processNode(node, linkMap, indent = 0) {
         const commands = { /* hid - open     : Load a website in text mode from help */
         versions: () => versionhistory,
        
-           help: () => `
-Available commands in ${theseOptions["language"]}:
-- ${cmdInLang("display")}                    : Display the currently loaded page
-- ${cmdInLang("links")}                      : Show all links in the currently loaded page
-- ${cmdInLang("follow")} [num]               : Follow a link by its number
-- ${cmdInLang("back")}                       : Go back to the previous page
-- ${cmdInLang("forward")}                    : Go forward to the next page
-- ${cmdInLang("reload")}                     : Reload last loaded page
-- ${cmdInLang("hint")}                       : A mysterious command, I don't know what it does.
-- ${cmdInLang("versions")}                   : Version history/changelog of this browser
-- ${cmdInLang("where")}                      : Outputs the URL of the currently loaded page
-- ${cmdInLang("clear")}                      : Clear the terminal
-- ${cmdInLang("exit")}                       : Return to GUI browser
-- [command1] | [command2]    : Redirect output into another command such as 'grep' or 'more'
-- [command] > filename.html  : Redirect output to a file download in accordance with your browser's settings, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
-- ${cmdInLang("more")}                       : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
-- ${cmdInLang("grep")} [pattern]             : Use after pipe (|) to filter output by regular expression. Case-insensitive
-- ${cmdInLang("options")} [parameter [value]]: Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
-- ${cmdInLang("help")}                       : Show this help message
+           help: () => {theLength=30;return `
+Available ${theseOptions["language"]} commands:
+- ${cmdInLang("display","",theLength)} : Display the loaded page
+- ${cmdInLang("links","",theLength)} : Show all links in the loaded page
+- ${cmdInLang("follow","[number]",theLength)} : Follow a link by its number
+- ${cmdInLang("back","",theLength)} : Go back to the previous page
+- ${cmdInLang("forward","",theLength)} : Go forward to the next page
+- ${cmdInLang("reload","",theLength)} : Reload last loaded page
+- ${cmdInLang("where","",theLength)} : Display the URL of the currently loaded page
+- ${cmdInLang("options","[parameter [value]]",theLength)} : Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
+- ${cmdInLang("exit","",theLength)} : End session and return to GUI browing mode
+- ${cmdInLang("help","",theLength)} : Show this help message
+- ${cmdInLang("versions","",theLength)} : Version history/changelog of this browser
+- ${cmdInLang("hint","",theLength)} : A mysterious command, I don't know what it does.
+- ${cmdInLang("","[command1] | [command2]",theLength)} : Redirect output into another command such as 'grep' or 'more'
+- ${cmdInLang("more","",theLength)} : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
+- ${cmdInLang("grep","[regexp]",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
+- ${cmdInLang("","[command] > filename.html",theLength)} : Save the output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
-Optional startup URL paramaters (starred value is default used when none specified):
-- language [cli-html*|unix|basic|piglatin]    : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
-- prompt  [unix*|pet|apple]                   : The style of command prompt
-- crt [bw|green|amber]                        : Choose between popular CRT colors. There may be some others available
+Optional startup URL paramaters (starred value is the default):
+- language [cli-html*|unix|basic|pig-latin]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
+- prompt [unix*|pet|apple]                    : Change style of command prompt to match various advanced platforms
+- crt [bw*|green|amber]                       : Choose between popular CRT colors. There may be some others available
 - forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience
-`, /* extra verbiage: Execute a command with elevated privileges */
+`;}, /* extra verbiage: Execute a command with elevated privileges */
  options: (option,value) =>   { if (option) {
- if (value) { theseOptions[option]=value;
+  if ((option=="language" && languages[value]==undefined) || theseOptions[option]==undefined) {return "\n?ILLEGAL VALUE\n";}
+ if (value) {
+            
+             theseOptions[option]=value;
              setCrt(theseOptions["crt"]);
              updatePrompt();
-             addOutput(option+" is "+theseOptions[option]);
+             addOutput(option+" is '"+theseOptions[option]+"'");
              if (option=="language") {addOutput(`\nType '${cmdInLang("help")}' for available commands.`);}
  } }
                              else
-                             {for (const opt in theseOptions) {theseOptions[opt]?addOutput(opt+" is "+theseOptions[opt]+"\n"):"";} }
+                             {for (const opt in theseOptions) {theseOptions[opt]?addOutput(opt+" is '"+theseOptions[opt]+"'\n"):"";} }
                               
                               
                               
@@ -1196,7 +1205,7 @@ reload: async () => {return commands.open(currentUrl, false, true);},
         }
         
         updatePrompt();
-       if (content && !gotFromCache) {addOutput( url+" loaded, "+ content.length+" bytes received");}
+       if (content && !gotFromCache) {addOutput( url+" loaded, "+ content.length+" bytes received. Ready to "+cmdInLang("display"));}
     thisOutput= (addToHistory || reload)?"":("\n"+(content|| 'Error: No content processed')); /* don't show on load or reload; make them use Display. Should really have a separate parameter to pass explicitly telling it whether to display or not, but for now, it's ok to do it this way. */
         return thisOutput ;
     } catch (err) {
@@ -1369,7 +1378,11 @@ reload: async () => {return commands.open(currentUrl, false, true);},
         case 'c64':   thisColor = "#CCF";     document.getElementById("terminal").style.background="#006"; bkColor="#CCF"; break;}
         
         document.body.style.background=bkColor; document.body.style.color=thisColor;}}
-    
+    function addDicts() /* yep, I hid more down here */ {let result= 
+                 { "latin":{"retrocedere":"back","ostende":"display","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
+                 "short":{"<":"back",".":"display","^":"exit","!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
+                 "pirate":{"astern":"back","hoist":"display","avast":"exit","tack":"follow","ahead":"forward","plunder":"grep","shanties":"help","dubloon":"hint","booty":"links","spyglass":"more","armaments":"options","arrrr":"reload","manifest":"versions","ahoy":"where"}};return result;}
+   
       function calcAssistance() {
     // Create full-screen overlay
     const overlay = document.createElement('div');
