@@ -26,7 +26,8 @@
 
 let versionhistory=`
 Version History:
-2025apr10 - for consistence, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
+2025apr11 - add code to move cursor with arrows and clicks in command line
+2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
 2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
 2025apr8 - first working version
         `;
@@ -51,7 +52,7 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&family=VT323&display=swap" rel="stylesheet" -->
 
-<style id="bodystyle">/* styles that shouldn't be in downoad files go here. */
+<style id="bodystyle">/* styles that shouldn't be in download files go here. */
  body {
      
   
@@ -69,7 +70,7 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
 }
 </style>
 <style id="cli_doc_style">
-       
+       :root {--cursorRight: 1 ;}
 body {  background: #1a1a1a;
     color: #ccc; /* #3f3;*/ /* dimmer base green */
 font-family: monospace;}
@@ -157,6 +158,8 @@ margin-inline:1px;
             margin-right: 8px;
         } */
       #command-input {
+      --cursor-offset: 0px;
+            position: relative;
     background: transparent;
     border: none;
    /* color: #ccc; *//* #33ff33; */
@@ -178,12 +181,14 @@ margin-inline:1px;
 	display: none; /* needed because firefox adds a <br> if you vackspace in an empty contenteditable */
 }
 
-#command-input:focus::after { /* :focus makes sure no cursor blink when can't type because not in field */
-    content: "█";
- /* color: #ccc; *//* #33ff33; */
-    animation: blink 1s steps(1) infinite;
+ #command-input:focus::after {
+            content: "█";
+            animation: blink 1s steps(1) infinite;
+            right: var(--cursor-offset);
+            position: relative;
+        }
 
-}
+
 .spacers {color:#333;}
 
 @keyframes blink {
@@ -237,6 +242,8 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
     </div>
 
     <script>
+    
+    
  const origCRT= defaultOptions["crt"];
      let theseOptions = defaultOptions; /* all acceptable url parameters must be listed here or they will be ignored */
 
@@ -278,7 +285,22 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
 
   
 const commandInput = document.getElementById('command-input');
+/* begin code to handle moving cursor with mouseclicks */
+        commandInput.addEventListener('input', updateCursor);
+        commandInput.addEventListener('click', updateCursor);
+        commandInput.addEventListener('keyup', updateCursor);
 
+        function updateCursor() {
+      //  input = document.getElementById('command-input');
+            const text = commandInput.textContent;
+            const cursorPos = window.getSelection().anchorOffset;
+            const offset = text.length - cursorPos;
+            commandInput.style.setProperty('--cursor-offset', offset + 'ch');
+        }
+
+        updateCursor();
+    /* end code to handle moving cursor with mouseclicks */
+    
 commandInput.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter') {
         e.preventDefault(); // Prevent default newline
