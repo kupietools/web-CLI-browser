@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<!-- Thanks for your curiosity, ya big ol' geek! michaelkupietz.com CLI interface by Michael Kupietz CLI@michaelkupietz.com -->
+<!-- Thanks for your curiosity, ya big ol' geek! CLI browsing interface by Michael Kupietz CLI@michaelkupietz.com -->
 <!-- Much thanks to the Indieweb Homebrew Website Club Europe/London for much inspiration and input -->
 <!-- Copyright (C) 2025  Michael E Kupietz.
 
@@ -26,6 +26,7 @@
 
 let versionhistory=`
 Version History:
+2025apr12 - update page title to reflect loaded page
 2025apr11 - add code to move cursor with arrows and clicks in command line
 2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
 2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
@@ -890,7 +891,9 @@ function processNode(node, linkMap, indent = 0) {
     
     const title = doc.querySelector('title');
     if (title) {
+
         const titleText = decodeHtmlEntities(title.textContent.trim());
+    document.title=titleText+" - CLI Browsing Mode";
         textContent += '<span class="text-title">';
         textContent += '='.repeat(40) + '\n';
         textContent += titleText + '\n';
