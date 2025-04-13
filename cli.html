@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
-<!-- Thanks for your curiosity, ya big ol' geek! CLI browsing interface by Michael Kupietz CLI@michaelkupietz.com -->
+<!-- Thanks for your curiosity, ya big ol' geek! CLI browsing interface by Michael Kupietz -->
 <!-- Much thanks to the Indieweb Homebrew Website Club Europe/London for much inspiration and input -->
-<!-- Copyright (C) 2025  Michael E Kupietz.
+
+<!-- Copyright (C) 2025  Michael E Kupietz. 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +20,16 @@
 
 -->
 
+<!-- Contact: 
+     CLI@michaelkupietz.com
+     Creative arts & tech showcase: https://michaelkupietz.com 
+     Github: https://github.com/kupietools 
+     Consulting: https://www.kupietz.com
+
+Seeking work as of this writing. Somebody please offer me a job. 
+
+-->
+
 <head>
 <script>
 
@@ -26,20 +37,29 @@
 
 let versionhistory=`
 Version History:
-2025apr12 - update page title to reflect loaded page
+2025apr13 - add scaling to image command so ascii art doesn't wrap, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line
+2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
 2025apr11 - add code to move cursor with arrows and clicks in command line
 2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
 2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
 2025apr8 - first working version
-        `;
+
+Known bugs:
+1.) if you scroll back the history and enter a new comment, history index doesn't reset to the end.
+2.) Doesn't clear the image array if you explicitly load a new page
+
+To Dos:
+1.) add -i flag to make image list show images. 
+2.) Need to test if noscript is handled correctly now
+`;
 
 let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
 
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
-                 "unix":{"curl":"open","cat":"display","ls":"links","whoami":"where","man":"help","cd":"follow","setopt":"options"},
-                 "basic":{"load":"open","print":"where","run":"display","list":"links","goto":"follow","poke":"options"},
-                 "pig-latin":{"openway":"open","ackbay":"back","optionsway":"options","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                 "unix":{"curl":"load","cat":"display","imagemagick":"images","ls":"links","whoami":"where","man":"help","cd":"follow","setopt":"options"},
+                 "basic":{"load":"load","print":"where","run":"display","gr":"images","list":"links","goto":"follow","poke":"options"},
+                 "pig-latin":{"oadlay":"load","ackbay":"back","imagesway":"images","optionsway":"options","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 
  };
     
@@ -47,7 +67,7 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
 /* end user settings */
 
 </script>
-
+<link href="https://cdn.jsdelivr.net/npm/@icon/dashicons@0.9.0-alpha.4/dashicons.min.css" rel="stylesheet">
  <meta charset="UTF-8">
 <!-- link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,6 +95,13 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
 body {  background: #1a1a1a;
     color: #ccc; /* #3f3;*/ /* dimmer base green */
 font-family: monospace;}
+.cliImgOut {
+/* font-size:.5em; nah, not sure I like this. */
+	line-height: 1em;
+}
+.cliImgOutAscii {
+	line-height: 1em;
+}
 .text-title {
     color: #5af; /* bright blue */
 }
@@ -291,12 +318,13 @@ const commandInput = document.getElementById('command-input');
         commandInput.addEventListener('click', updateCursor);
         commandInput.addEventListener('keyup', updateCursor);
 
-        function updateCursor() {
-      //  input = document.getElementById('command-input');
+        function updateCursor(e = {}) {
+      /*  input = document.getElementById('command-input'); */
+        if (!e || !e.key || (e.key != "ArrowUp" && e.key != "ArrowDown" /* up and down arrows handle positioning the cursor after loading the next or prev history line in the keydown listener */)) {
             const text = commandInput.textContent;
             const cursorPos = window.getSelection().anchorOffset;
             const offset = text.length - cursorPos;
-            commandInput.style.setProperty('--cursor-offset', offset + 'ch');
+            commandInput.style.setProperty('--cursor-offset', offset + 'ch'); }
         }
 
         updateCursor();
@@ -336,6 +364,7 @@ commandInput.addEventListener('paste', (e) => {
         const urlPattern = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w- .\/?%&=]*)?$/;
         
         const PROXY_SERVICES = [
+        /* a word of explanation here. These are third party CORS proxies included as a kludge, in case something needs to be fetched from another domain [wink] for [wink] some [wink] reason */
             (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
             (url) => `https://cors-anywhere.herokuapp.com/${url}`,
             (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
@@ -350,7 +379,11 @@ commandInput.addEventListener('paste', (e) => {
         let currentProxyIndex = 0;
         let morePromptDiv = null;
         let originalURL = "";
-        
+    
+    let chWidth=chToPixels();
+    
+    let imageNum = 0;
+      let imageArray=[];
         // New variables for history tracking
         let pageHistory = [];
         let currentHistoryIndex = -1;
@@ -365,6 +398,21 @@ commandInput.addEventListener('paste', (e) => {
             SIGTSTP: '^Z',
             SIGQUIT: '^\\'
         };
+    
+    
+function chToPixels() {
+  const temp = document.createElement('span');
+  temp.style.font = window.getComputedStyle(document.getElementsByTagName("body")[0]).font;
+  temp.style.fontSize = window.getComputedStyle(document.getElementsByTagName("body")[0]).fontSize;
+  temp.style.position = 'absolute';
+ // temp.style.visibility = 'hidden';
+  temp.textContent = '0';
+  document.body.appendChild(temp);
+  const zeroWidth = temp.offsetWidth;
+//  document.body.removeChild(temp);
+
+  return zeroWidth;
+}
 
         function decodeHtmlEntities(text) {
     
@@ -389,7 +437,8 @@ commandInput.addEventListener('paste', (e) => {
         }
 
         
-
+    
+    
 function updatePrompt() {
     promptSpan.textContent = prompts[theseOptions.prompt]();/*was currentUrl ? `[${currentUrl}]$ ` : '$ '; */
 
@@ -543,7 +592,7 @@ function updatePrompt() {
   function download_txt(output, myFile) {
     // Create a blob with the output content
   thisStyle=document.getElementById("cli_doc_style").innerHTML;
-  output='<!doctype HTML><html><head><style>'+thisStyle+'</style><body>'+output.replace(/(?:\r\n|\r|\n)/g,"<br>")+'</body></html>';
+  output='<!doctype HTML><html><head><link href="https://cdn.jsdelivr.net/npm/@icon/dashicons@0.9.0-alpha.4/dashicons.min.css" rel="stylesheet"><style>'+thisStyle+'</style><body>'+output.replace(/(?:\r\n|\r|\n)/g,"<br>")+'</body></html>';
     const blob = new Blob([output], { type: 'text/html' });
 
     // Create a URL for the blob
@@ -711,11 +760,14 @@ function processNode(node, linkMap, indent = 0) {
 
     const tagName = node.tagName.toLowerCase();
     
-    if (['script', 'style', 'iframe', 'noscript'].includes(tagName)) {
+    if (['script', 'style', 'iframe' /*, 'noscript' */].includes(tagName)) {
         return '';
     }
 
+
+
     switch (tagName) {
+
         case 'h1':
         case 'h2':
         case 'h3':
@@ -766,15 +818,24 @@ function processNode(node, linkMap, indent = 0) {
           content += '\n<!-- 587 -->'+(spacer);
             indent += 1;
             break;
-    case 'img': 
-    content += '<span class="text-img">[img: '+(node.getAttribute('alt') || ((node.src.substring(0,5)=="data:")?(node.src.substring(0,32)+"..."):node.src))+']'; break;
-/*    case 'img': 
- content += "[image "+node.dataset.src+"]"; */
+    case 'img':
+   
+    let thisFile=(node.getAttribute('data-src')||node.src);
+    let thisAlt=node.getAttribute('alt') || "";
+    let theDimensions = node.naturalWidth?`${node.naturalWidth}x${node.naturalHeight}`:( node.width?`${node.width}x${node.height}`:'');
+    content += `<span class="text-img">[image ${++imageNum}${thisAlt?": "+thisAlt:""}${theDimensions?' '+theDimensions:''}]`; 
+     imageArray[imageNum]={url:thisFile,alt:thisAlt,dim:theDimensions};
+    break;
+  
     }
     
-  /*  if (node.classList.contains('h6')) {
-        content += '\n\n'+(spacer);
-    } */
+/*    case 'img': 
+ content += "[image "+node.dataset.src+"]"; */
+    
+    
+
+
+
  if (node.classList.contains('titleprefix') ) {
         content += '<span class="titleprefix">';
     }
@@ -792,6 +853,12 @@ function processNode(node, linkMap, indent = 0) {
  if (node.classList.contains('mmarker-child-a')) {
         content += '<span class="mmarker-child-a">';
     }
+
+if(node.classList.contains('dashicons')) {
+classOut = Array.from(node.classList).filter(item => item.includes("dashicons")).join(" "); /* node.classList is a DOMTokenList object, not a regular array, so it doesn't have the filter method. You need to convert it to an array first. [...node.classList] would work too. */
+if (classOut) {content += `<span class="${classOut}"></span>`;}
+
+}
 
 
 
@@ -816,6 +883,7 @@ function processNode(node, linkMap, indent = 0) {
     }
     
     switch (tagName) {
+    
     case 'img': content += "</span>"; break;
        case 'ul':
         case 'ol':
@@ -823,7 +891,7 @@ function processNode(node, linkMap, indent = 0) {
           
             break;
     
-    
+   
         case 'h1':
         case 'h2':
         case 'h3':
@@ -867,6 +935,7 @@ function processNode(node, linkMap, indent = 0) {
     
     
      async function processHTML(html, url) {
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(html  .replace(/&lt;/gi, '&amp;lt;'), 'text/html'); /* DOMparser automatically renders entities in text so code in the bodies made with fake entities renters is real code in the browser if you don't substitute. */
     
@@ -886,6 +955,7 @@ function processNode(node, linkMap, indent = 0) {
         }
         return null;
     }).filter(Boolean);
+  
 
     let textContent = '';
     
@@ -893,7 +963,7 @@ function processNode(node, linkMap, indent = 0) {
     if (title) {
 
         const titleText = decodeHtmlEntities(title.textContent.trim());
-    document.title=titleText+" - CLI Browsing Mode";
+    document.title="CLI Browser ["+titleText+"]";
         textContent += '<span class="text-title">';
         textContent += '='.repeat(40) + '\n';
         textContent += titleText + '\n';
@@ -991,13 +1061,15 @@ function processNode(node, linkMap, indent = 0) {
     
     
     
-        const commands = { /* hid - open     : Load a website in text mode from help */
+        const commands = { /* hid - load     : Load a website in text mode from help */
         versions: () => versionhistory,
        
            help: () => {theLength=30;return `
 Available ${theseOptions["language"]} commands:
 - ${cmdInLang("display","",theLength)} : Display the loaded page
-- ${cmdInLang("links","",theLength)} : Show all links in the loaded page
+- ${cmdInLang("links","",theLength)} : List all links in the loaded page
+- ${cmdInLang("images","",theLength)} : List all image descriptions and URLs in the loaded page
+- ${cmdInLang("image","",theLength)} : Display an ascii-converted image by image number
 - ${cmdInLang("follow","[number]",theLength)} : Follow a link by its number
 - ${cmdInLang("back","",theLength)} : Go back to the previous page
 - ${cmdInLang("forward","",theLength)} : Go forward to the next page
@@ -1018,6 +1090,7 @@ Optional startup URL paramaters (starred value is the default):
 - prompt [unix*|pet|apple]                    : Change style of command prompt to match various advanced platforms
 - crt [bw*|green|amber]                       : Choose between popular CRT colors. There may be some others available
 - forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience
+
 `;}, /* extra verbiage: Execute a command with elevated privileges */
  options: (option,value) =>   { if (option) {
   if ((option=="language" && languages[value]==undefined) || theseOptions[option]==undefined) {return "\n?ILLEGAL VALUE\n";}
@@ -1038,7 +1111,7 @@ Optional startup URL paramaters (starred value is the default):
        
         where: ()=>currentUrl,
         
-hint: () => {let hints=[`If you ${cmdInLang("open")} a can of URLs, you do so at your own risk.`,
+hint: () => {let hints=[`If you ${cmdInLang("load")} a can of URLs, you do so at your own risk.`,
                     "You can do as the su say, not as the su do.",
 "Don't be startled by hollow voices. It's not personal.", 
 "There are things here Indiana Jones would tremble in fear of.",
@@ -1054,11 +1127,12 @@ hint: () => {let hints=[`If you ${cmdInLang("open")} a can of URLs, you do so at
        /*  crt: (color) => {setCrt(color);
             },*/
 xyzzy: () => {return "\nA hollow voice says 'fool'";},
-            display: async () => {
-                if (!currentUrl) {
+            display: async (url="") => {
+            if (currentLinks[url] != undefined && currentLinks[url].href != undefined && currentLinks[url].href != "") {url = currentLinks[url].href}
+                if ((!currentUrl) && (!url)) {
                     return 'No page currently loaded.';
                 }
-                return commands.open(currentUrl, false);
+                return commands.load(url || currentUrl, false);
             }, 
 
           back: async () => {
@@ -1067,7 +1141,7 @@ xyzzy: () => {return "\nA hollow voice says 'fool'";},
     }
     toggleInputLine(false);
     currentHistoryIndex--;
-    const result = await commands.open(pageHistory[currentHistoryIndex], false);
+    const result = await commands.load(pageHistory[currentHistoryIndex], false);
     if (!currentMoreOutput) {
         toggleInputLine(true);
     }
@@ -1080,13 +1154,97 @@ xyzzy: () => {return "\nA hollow voice says 'fool'";},
     }
     toggleInputLine(false);
     currentHistoryIndex++;
-    const result = await commands.open(pageHistory[currentHistoryIndex], false);
+    const result = await commands.load(pageHistory[currentHistoryIndex], false);
     if (!currentMoreOutput) {
         toggleInputLine(true);
     }
     return result;
 },
+        
+image: async (param1,param2) => {
+num=isNaN(param1)?param2:param1;
+ascii=isNaN(param1)?(param1="-a"):param2;
 
+imageUrl = imageArray[num]["url"];
+ 
+ return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+          const scale = Math.max(1.05*img.width /window.innerWidth, 1.05*img.height/window.innerHeight);
+        /* scale if image > 98% of window in either dimension */
+
+           const blockWidth = chWidth*Math.max(scale,1);
+            const blockHeight =chWidth*2*Math.max(scale,1);        
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+                  /* remember if the console is open, it will scale if the vertical direction is bigger than the remaining available window height */
+      
+            const blocksAcross = Math.floor(img.width / blockWidth);
+            const blocksDown = Math.floor(img.height / blockHeight);
+            
+            // ASCII chars from darkest to brightest
+            const asciiChars = ' .-░*%#@$&▒§¶▓█';
+            let result = '';
+            
+            for(let y = 0; y < blocksDown; y++) {
+                for(let x = 0; x < blocksAcross; x++) {
+                    const data = ctx.getImageData(x * blockWidth, y * blockHeight, blockWidth, blockHeight).data;
+                    
+                    let r = 0, g = 0, b = 0;
+                    for(let i = 0; i < data.length; i += 4) {
+                        r += data[i];
+                        g += data[i + 1];
+                        b += data[i + 2];
+                    }
+                    
+                    const pixelCount = (blockWidth * blockHeight);
+                    r = Math.floor(r / pixelCount);
+                    g = Math.floor(g / pixelCount);
+                    b = Math.floor(b / pixelCount);
+                    const asciiMax = 200/Math.max(r,g,b) //upscale displayed color brightness a bit for ascii
+                    let ra= Math.floor(r*asciiMax);
+                    let ga= Math.floor(g*asciiMax);
+                    let ba= Math.floor(b*asciiMax);
+                    
+                    // Calculate brightness (0-255)
+                    const brightness = (r + g + b) / 3; //upscale brightness:  Math.min((r + g + b) / 3,255); 
+                    
+                    // Map brightness to ASCII character
+                    const charIndex = Math.floor(brightness / 255 * (asciiChars.length - 1));
+                    const char = asciiChars[charIndex];
+                    
+                    // Add colored character
+                    result += ascii?`<span class="termImgAscii" ${ascii?`style="color: rgb(${ra},${ga},${ba})"`:`style="color: rgb(${r},${g},${b})"`}>${char}</span>`:`<span class="termImg" style="color: rgb(${r},${g},${b})">█</span>`;
+                }
+                result += '<br>';
+            }
+                    result = `<div class="cliImgOut${ascii?'Ascii':''}">${result}</div>`
+            resolve(result);
+        };
+        
+        img.onerror = reject;
+        img.src = imageUrl;
+    });
+
+}
+
+
+,
+
+
+ images: () => { let outImages="";for (const imNum in imageArray)
+ {
+    
+outImages+=`<span class="text-link">[${imNum}]</span> ${imageArray[imNum]["alt"]?imageArray[imNum]["alt"]+" ":""}<span class="text-img">${imageArray[imNum]["url"]}${imageArray[imNum]["dim"]?' '+imageArray[imNum]["dim"]:''}</span>\n`;
+ }
+ return outImages;
+ ;}
+        ,
         
  sudo: async (user) => {
     const line = document.createElement('div');
@@ -1164,7 +1322,7 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
 
             links: () => {
                 if (!currentLinks || currentLinks.length === 0) {
-                    return 'No links available. Load a page first using the open command.';
+                    return 'No links available. Load a page first using the Load command.';
                 }
                 return currentLinks.map((link, i) => 
                     `<span class="text-link">[${i + 1}]</span> <span class="text-anchor">${link.text}</span> -> ${link.href}</a>`
@@ -1173,19 +1331,19 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
 
             follow: async (num) => {
                 if (!currentLinks || currentLinks.length === 0) {
-                    return 'No links available. Load a page first using the open command.';
+                    return 'No links available. Load a page first that contains links.';
                 }
                 const index = parseInt(num) - 1;
                 if (isNaN(index) || index < 0 || index >= currentLinks.length) {
                     return 'Invalid link number. Use the links command to see available links.';
                 }
-                return commands.open(currentLinks[index].href);
+                return commands.load(currentLinks[index].href);
             },
-reload: async () => {return commands.open(currentUrl, false, true);},
+reload: async () => {return commands.load(currentUrl, false, true);},
            
         
         
-        open: async (url, addToHistory = true, reload=false) => {
+        load: async (url, addToHistory = true, reload=false) => {
     if (!url) return 'Error: Please provide a URL';
 
     if (!url.startsWith('http')) {
@@ -1349,6 +1507,7 @@ reload: async () => {return commands.open(currentUrl, false, true);},
             sel.removeAllRanges();
             sel.addRange(range);
         }
+      commandInput.style.setProperty('--cursor-offset', '0ch');
     } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (historyIndex > 0) {
@@ -1365,6 +1524,7 @@ reload: async () => {return commands.open(currentUrl, false, true);},
         range.collapse(false);
         sel.removeAllRanges();
         sel.addRange(range);
+       commandInput.style.setProperty('--cursor-offset', '0ch');
     }
 });
     
@@ -1404,9 +1564,9 @@ reload: async () => {return commands.open(currentUrl, false, true);},
         
         document.body.style.background=bkColor; document.body.style.color=thisColor;}}
     function addDicts() /* yep, I hid more down here */ {let result= 
-                 { "latin":{"retrocedere":"back","ostende":"display","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
-                 "short":{"<":"back",".":"display","^":"exit","!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
-                 "pirate":{"astern":"back","hoist":"display","avast":"exit","tack":"follow","ahead":"forward","plunder":"grep","shanties":"help","dubloon":"hint","booty":"links","spyglass":"more","armaments":"options","arrrr":"reload","manifest":"versions","ahoy":"where"}};return result;}
+                 { "latin":{"retrocedere":"back","ostende":"display","imaginum":"images","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
+                 "short":{"<":"back",".":"display","*":"load","^":"exit","%":"images","!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
+                 "pirate":{"astern":"back","board":"load","hoist":"display","avast":"exit","tack":"follow","mateys":"images","ahead":"forward","plunder":"grep","shanties":"help","dubloon":"hint","booty":"links","spyglass":"more","armaments":"options","arrrr":"reload","manifest":"versions","ahoy":"where"}};return result;}
    
       function calcAssistance() {
     // Create full-screen overlay
@@ -1607,7 +1767,7 @@ reload: async () => {return commands.open(currentUrl, false, true);},
         startUrl = window.location.origin;
     }
     originalURL = startUrl;
-    await commands.open(theseOptions["starturl"]?theseOptions["starturl"]:startUrl);
+    await commands.load(theseOptions["starturl"]?theseOptions["starturl"]:startUrl);
    /* addOutput("Enter 'display' to view the page or 'links' to see available links."); */
     toggleInputLine(true);
 }
