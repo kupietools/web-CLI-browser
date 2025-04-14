@@ -37,7 +37,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory=`
 Version History:
-2025apr13 - add scaling to image command so ascii art doesn't wrap, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line
+2025apr13 - add scaling to image command so ascii art doesn't wrap, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add clear command
 2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
 2025apr11 - add code to move cursor with arrows and clicks in command line
 2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
@@ -58,8 +58,8 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
                  "unix":{"curl":"load","cat":"display","imagemagick":"images","ls":"links","whoami":"where","man":"help","cd":"follow","setopt":"options"},
-                 "basic":{"load":"load","print":"where","run":"display","gr":"images","list":"links","goto":"follow","poke":"options"},
-                 "pig-latin":{"oadlay":"load","ackbay":"back","imagesway":"images","optionsway":"options","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
+                 "basic":{"load":"load","print":"where","cls":"clear";"run":"display","gr":"images","list":"links","goto":"follow","poke":"options"},
+                 "pig-latin":{"oadlay":"load","ackbay":"back","earclay":"clear";"imagesway":"images","optionsway":"options","erewhay":"where","isplayday":"display","exitway" : "exit","ollowfay":"follow","orwardfay":"forward","epgray":"grep","elphay":"help","inthay":"hint","inkslay":"links","oremay":"more","eloadray":"reload","ersionsvay":"versions","udosay":"sudo","akesnay":"snake","options":"optionsway"}
                 
  };
     
@@ -1074,8 +1074,9 @@ Available ${theseOptions["language"]} commands:
 - ${cmdInLang("back","",theLength)} : Go back to the previous page
 - ${cmdInLang("forward","",theLength)} : Go forward to the next page
 - ${cmdInLang("reload","",theLength)} : Reload last loaded page
+- ${cmdInLang("clear","",theLength)} : Clear the previous terminal output
 - ${cmdInLang("where","",theLength)} : Display the URL of the currently loaded page
-- ${cmdInLang("options","[parameter [value]]",theLength)} : Manually set URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
+- ${cmdInLang("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 - ${cmdInLang("exit","",theLength)} : End session and return to GUI browing mode
 - ${cmdInLang("help","",theLength)} : Show this help message
 - ${cmdInLang("versions","",theLength)} : Version history/changelog of this browser
@@ -1162,10 +1163,12 @@ xyzzy: () => {return "\nA hollow voice says 'fool'";},
 },
         
 image: async (param1,param2) => {
-num=isNaN(param1)?param2:param1;
-ascii=isNaN(param1)?(param1="-a"):param2;
 
-imageUrl = imageArray[num]["url"];
+num=isNaN(param1)?param2:param1;
+ascii=isNaN(param1)?(param1=="-a" || param1=="--ascii-art"):param2;
+if (isNaN(param1) && !["-a","--ascii-art"].includes(param1)) {return "unrecognized option: "+param1;}
+if (imageArray[num] && imageArray[num]["url"]) {
+imageUrl = imageArray[num]["url"]; } else {return "Invalid image number: "+num;}
  
  return new Promise((resolve, reject) => {
         const img = new Image();
@@ -1188,7 +1191,11 @@ imageUrl = imageArray[num]["url"];
             const blocksDown = Math.floor(img.height / blockHeight);
             
             // ASCII chars from darkest to brightest
-            const asciiChars = ' .-░*%#@$&▒§¶▓█';
+            const asciiChars = ' .`\'",-:;~>+!?░@l#$&▒§¶MWB▓█';
+            /* alternative character sets: 
+             Original :".-░*%#@$&▒§¶▓█';
+            " .'`^\",_-:;~>+!/?1}(|l[irxczb%khmwqpdXQ0OZ#MWB@";
+            " .'`^\",_-:;~><+?][}1(|/Il!itfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@"; */
             let result = '';
             
             for(let y = 0; y < blocksDown; y++) {
@@ -1223,7 +1230,7 @@ imageUrl = imageArray[num]["url"];
                 }
                 result += '<br>';
             }
-                    result = `<div class="cliImgOut${ascii?'Ascii':''}">${result}</div>`
+                    result = `<div class="cliImgOut${ascii?'Ascii':''}">${result}${scale>1?"[Scaled "+Math.floor(100*(1/scale))+"%]":""}</div>`
             resolve(result);
         };
         
@@ -1341,7 +1348,11 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
             },
 reload: async () => {return commands.load(currentUrl, false, true);},
            
-        
+        clear: () => {elements = document.getElementsByClassName("output");
+    while(elements.length > 0){
+        elements[0].parentNode.removeChild(elements[0]);
+    }
+return},
         
         load: async (url, addToHistory = true, reload=false) => {
     if (!url) return 'Error: Please provide a URL';
@@ -1564,9 +1575,9 @@ reload: async () => {return commands.load(currentUrl, false, true);},
         
         document.body.style.background=bkColor; document.body.style.color=thisColor;}}
     function addDicts() /* yep, I hid more down here */ {let result= 
-                 { "latin":{"retrocedere":"back","ostende":"display","imaginum":"images","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
-                 "short":{"<":"back",".":"display","*":"load","^":"exit","%":"images","!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
-                 "pirate":{"astern":"back","board":"load","hoist":"display","avast":"exit","tack":"follow","mateys":"images","ahead":"forward","plunder":"grep","shanties":"help","dubloon":"hint","booty":"links","spyglass":"more","armaments":"options","arrrr":"reload","manifest":"versions","ahoy":"where"}};return result;}
+                 { "latin":{"retrocedere":"back","ostende":"display","imaginum":"images","purgare":"clear","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
+                 "short":{"<":"back",".":"display","*":"load","^":"exit","%":"images","-":"clear";"!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
+                 "pirate":{"astern":"back","board":"load","hoist":"display","jettison":"clear","avast":"exit","tack":"follow","mateys":"images","ahead":"forward","plunder":"grep","shanties":"help","dubloon":"hint","booty":"links","spyglass":"more","armaments":"options","arrrr":"reload","manifest":"versions","ahoy":"where"}};return result;}
    
       function calcAssistance() {
     // Create full-screen overlay
