@@ -37,7 +37,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory=`
 Version History:
-2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information
+2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
 2025apr13 - add scaling to image command so ascii art doesn't wrap, add -a image option, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add image scaling readout, add clear command
 2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
 2025apr11 - add code to move cursor with arrows and clicks in command line
@@ -52,6 +52,9 @@ Known bugs:
 To Dos:
 1.) add -i flag to make image list show images. 
 2.) Need to test if noscript is handled correctly now
+3.) add scale command to scale output
+4.) Maybe try to wrap and indent long lines at #terminal width in help etc. 
+5.) Maybe move languages into an attribute of commands, I dunno
 `;
 
 let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
@@ -104,62 +107,64 @@ font-family: monospace;}
 	line-height: 1em;
 }
 .text-title {
-    color: #5af; /* bright blue */
+    color: #9cf; /*#5af;*/ /* bright blue */
 }
 .text-header {
-    color: #ff9; /* bright white for headers instead of green */
+    color: #ffc /* #ff9; */ /* bright white for headers instead of green */
 text-transform: uppercase;
 }
 .text-link {
-    color: #f5f; /* bright magenta */
+    color: #faf; /* #f5f; *//* bright magenta */
   font-size:10px;
 }
 .text-list {
   /*  color: #ff5;*/ /* bright yellow */ 
 }
 .text-quote {
-    color: #5ff; /* bright cyan */
+    color: #aff; /* #5ff;*/ /* bright cyan */
 }
 .text-img {
-color:#960;}
+color:#960; /*#960;*/
+}
 .text-bold {
-    color: #f99; /* bright white */
+    color: #fcc; /*#f99; */ /* bright white */
 }
 .text-anchor {
-    color: #8ef; /* bright white */
+    color: #9ef;/* #8ef; *//* bright white */
 }
 .text-summary {
-    color: #9f9; /* bright white */
+    color: #cfc;/* #9f9; */ /* bright white */
 }.text-summary::before {
     text-content: '&#9654'; /* bright white */
 }
 .text-detail {
-    color: #6c9; /* bright white */
+    color: #cd9 /* #6c9 */; /* bright white */
 }
 
-.mmarker-child-a { color: #ff5;}
+.mmarker-child-a { color: #ffb; /*#ff5;*/}
 .screen-reader-text {display: none;}
 
-.h6 {
-	text-transform: uppercase;
+.h6, .titleprefix {
+	/*text-transform: uppercase;*
 	/*letter-spacing: 2px;*/
-	font-size: .6875em;
+	/*font-size: .6875em;*/
+font-variant: small-caps;
 	/*display: block;*/
-    color:#def;
+    color:#8bc;/*8ac*//*#def;*/
 	font-weight: 400;
 	font-style: normal;
 
 }
 .h6:after {content:": ";}
 
-.meta-genre-term {font-size: .6875em;   color:#99F;
+.meta-genre-term {font-size: .6875em;   color:#ccf; /*#99F;*/
 
 
 display: inline-block !important;
 
 	padding: 2px 3px !important;
 	line-height: 0.75em;
-	/* border: 2px solid #33c6ff !important;*/
+	border: 1px solid #33c6ff !important;
 	/* background: #ccc /* #33c6ff */ !important; */
 	width: auto;
 	font-weight: 400 !important;
@@ -313,7 +318,13 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for avail
     document.getElementById("helplang").textContent=cmdInLang("help");
 
   
+
 const commandInput = document.getElementById('command-input');
+    
+        document.getElementById("terminal").addEventListener('click', function() {
+    commandInput.focus();
+});
+    
 /* begin code to handle moving cursor with mouseclicks */
         commandInput.addEventListener('input', updateCursor);
         commandInput.addEventListener('click', updateCursor);
@@ -988,18 +999,24 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
 }
 
     
-    function locCmd(commandInput) {
+    function locCmd(commandIn) {
+   console.log("In locCmd for commandIn",commandIn,
+             "theseOptions[language]",theseOptions["language"],"languages[theseOptions[language]]",languages[theseOptions["language"]],"languages[theseOptions[language]][commandIn]",languages[theseOptions["language"]][commandIn] ||"");
    
-    result = (cmdInLang(commandInput)!=commandInput)? "" : (languages[theseOptions["language"]][commandInput] || commandInput); /* make it so when using a language, the original commands fail if alternatives are defined for them */
+    result = (cmdInLang(commandIn)!=commandIn)? "" : (languages[theseOptions["language"]][commandIn] || commandIn); /* make it so when using a language, the original commands fail if alternatives are defined for them */
+    console.log("done locCmd for ",commandIn);
     return result;
   
     };
     
-    function cmdInLang(commandInput,description="",length=0) {
-
-    theCommand=cmdDict[theseOptions["language"]][commandInput]||commandInput;
+    function cmdInLang(commandIn,description="",length=0) {
+ console.log("In cmdInLang. commandIn",commandIn,
+             "theseOptions[language]",theseOptions["language"],"cmdDict[theseOptions[language]]",cmdDict[theseOptions["language"]],"cmdDict[theseOptions[language]][commandIn]",cmdDict[theseOptions["language"]][commandIn] ||"");
+   
+    theCommand=cmdDict[theseOptions["language"]][commandIn]||commandIn;
     theOutput=theCommand+((theCommand && description)?" ":"")+description;
     padding=Math.max(length-theOutput.length,0);
+    console.log ("done cmdInLang for ",commandIn);
     return theOutput+" ".repeat(padding);
     }
     
@@ -1063,15 +1080,15 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
     
     
         const commands = { /* hid - load     : Load a website in text mode from help */
-        versions: {man:`USAGE: versions
+        versions: {man: ()=>`USAGE: ${cmdInLang("versions")}
         
         This displays the version history of this software, as well as other development-related info.`,
                  do:() => versionhistory},
        
-           help: {man:`Unfortunately the help page for 'help' has been recalled by the Department Of Redundancy Department.`,
+           help: {man: ()=>`Unfortunately the ${cmdInLang("help")} page for '${cmdInLang("help")}' has been recalled by the Department Of Redundancy Department.`,
                   do:(command="") => {
                   if (command=="") {theLength=30;return `
-Available ${theseOptions["language"]} commands. Use 'help somecommand' to see more detailed info on a command:
+Available ${theseOptions["language"]} commands. Use '${cmdInLang("help")} somecommand' to see more detailed info on a command:
 - ${cmdInLang("display","",theLength)} : Display the loaded page
 - ${cmdInLang("links","",theLength)} : List all links in the loaded page
 - ${cmdInLang("images","",theLength)} : List all image descriptions and URLs in the loaded page
@@ -1100,14 +1117,17 @@ Optional startup URL paramaters (starred value is the default):
 
 `;}
                   else
-                  
-                  if (commands[command]) 
-{return "\n"+commands[command].man || "\nNo man page for "+command;} 
+
+
+                  console.log("1. locCmd(command)", locCmd(command));
+                     console.log("2. commands[locCmd(command)].man", commands[locCmd(command)].man);
+                  if (commands[locCmd(command)])
+{console.log("3. inside if.");return `\n${commands[locCmd(command)].man()}`|| "\nNo man page for "+command;} 
 else {return "\n?BAD VALUE - "+command;}
                   }}, /* extra verbiage: Execute a command with elevated privileges */
- options: {man:`USAGE: options [parameter [value]]
+ options: {man: ()=>`USAGE: ${cmdInLang("options")} [parameter [value]]
  
-            This program allows you to initially set options by including URL parameters when you first call it. (see 'help' command.) You can view or change the same set of options from the command line by using this command. 'Options' alone will list the currently set options. 'Options parametername' will show you the current setting for parametername. 'Options parametername value' will set parametername to value.`, 
+            This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdInLang("help")}' command.) You can view or change the same set of options from the command line by using this command. '${cmdInLang("options")}' alone will list the currently set options. '${cmdInLang("options")} parametername' will show you the current setting for parametername. '${cmdInLang("options")} parametername value' will set parametername to value.`, 
                        
             do:(option,value) =>   { if (option)
  {
@@ -1127,12 +1147,12 @@ else {return "\n?BAD VALUE - "+command;}
                               
  }},
        
-        where: {man:`USAGE: where
+        where: {man: ()=>`USAGE: ${cmdInLang("where")}
         
         Simply outputs the URL of the currently loaded page.`,
                 do:()=>currentUrl},
         
-hint: {man:`There is no man page for hint.`,do:() => {let hints=[`If you ${cmdInLang("load")} a can of URLs, you do so at your own risk.`,
+hint: {man: ()=>`There is no man page for hint.`,do:() => {let hints=[`If you ${cmdInLang("load")} a can of URLs, you do so at your own risk.`,
                     "You can do as the su say, not as the su do.",
 "Don't be startled by hollow voices. It's not personal.", 
 "There are things here Indiana Jones would tremble in fear of.",
@@ -1147,22 +1167,25 @@ hint: {man:`There is no man page for hint.`,do:() => {let hints=[`If you ${cmdIn
               
        /*  crt: (color) => {setCrt(color);
             },*/
-xyzzy: {man:`USAGE: xyzzy
+xyzzy: {man: ()=>`USAGE: ${cmdInLang("xyzzy")}
 
         It is pitch black. You are likely to be eaten by a grue.`,
         do:() => {return "\nA hollow voice says 'fool.'";}},
             
-        display: async (url="") => {
+        display: {man: ()=>`USAGE: ${cmdInLang("display")}
+        
+        Display the currently loaded page.`,
+                  do:async (url="") => {
             if (currentLinks[url] != undefined && currentLinks[url].href != undefined && currentLinks[url].href != "") {url = currentLinks[url].href}
                 if ((!currentUrl) && (!url)) {
                     return 'No page currently loaded.';
                 }
                 return doCommand("load")(url || currentUrl, false);
-            }, 
+            }}, 
 
-          back: {man:`USAGE: back
+          back: {man: ()=>`USAGE: ${cmdInLang("back")}
         
-        Reloads the previous page in the browsing history. Use 'forward' to move forward again.`,
+        Reloads the previous page in the browsing history. Use '${cmdInLang("forward")}' to move forward again.`,
 do:async () => {
     if (currentHistoryIndex <= 0) {
         return 'No previous pages in history.';
@@ -1176,9 +1199,9 @@ do:async () => {
     return result;
 }},
         
-        forward: {man:`USAGE: forward
+        forward: {man: ()=>`USAGE: ${cmdInLang("forward")}
         
-        If you have previously used 'back' to move backwards in the browsing history, thisreloads the following page in the history.`,
+        If you have previously used '${cmdInLang("back")}' to move backwards in the browsing history, this reloads the following page in the history.`,
                   do:async () => {
     if (currentHistoryIndex >= pageHistory.length - 1) {
         return 'No forward pages in history.';
@@ -1192,9 +1215,9 @@ do:async () => {
     return result;
 }},
         
-image: {man:`USAGE: image [imagenumber]
+image: {man: ()=>`USAGE: ${cmdInLang("image")} [imagenumber]
 
-            Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the 'images' command.`,
+            Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the '${cmdInLang("images")}' command.`,
         
         do:async (param1,param2) => {
 
@@ -1278,7 +1301,7 @@ imageUrl = imageArray[num]["url"]; } else {return "Invalid image number: "+num;}
 ,
 
 
- images: {man:`USAGE: images
+ images: {man: ()=>`USAGE: ${cmdInLang("images")}
  
         Returns a numbered list of the images in the currently loaded dcument, with alt text, URLs, and dimensions.`,
           do: () => { let outImages="";for (const imNum in imageArray)
@@ -1290,9 +1313,9 @@ outImages+=`<span class="text-link">[${imNum}]</span> ${imageArray[imNum]["alt"]
  ;} }
         ,
         
- sudo: {man: `USAGE: sudo somecommand [option1 option2 ...]
+ sudo: {man: ()=> `USAGE: sudo somecommand [option1 option2 ...]
  
-        This executes somecommand with elevated privileges, which removes the security restrictions placed on ordinary users. Useful for erasing the internet or launching nuclear warheads.`,
+        This executes somecommand with elevated privileges, which removes the security restrictions placed on ordinary users. Useful for completely erasing the internet or launching nuclear warheads.`,
         do:async (user) => {
     const line = document.createElement('div');
     line.style.display = 'inline-block';
@@ -1347,10 +1370,10 @@ Administrator. It usually boils down to these three things:
     }
     return '';
 }},
- snake: {man:"Sorry, Indi.",do:() => {calcAssistance()}},
-        grep: {man:`USAGE: somecommand | grep [searchstring]
+ snake: {man: ()=>"Sorry, Indi.",do:() => {calcAssistance()}},
+        grep: {man: ()=>`USAGE: ${cmdInLang("somecommand")} | grep [searchstring]
         
-        Filters the output of somecommand so that only lines that contain searchstring will show. The match is case-insensitive: 'THE' and 'The' are considered to be the same thing. Searchstring can be a regular expression (if you don't know what that is, you don't need to.) Regular expressions should not be surrounded by //. `,
+        Filters the output of somecommand so that only lines that contain searchstring will show. The match is case-insensitive: "THE" and "The" are considered to be the same thing. Searchstring can be a regular expression (if you don't know what that is, you don't need to.) Regular expressions should not be surrounded by //. `,
                do:(pattern, prevOutput) => {
     if (!pattern) {
         return 'Error: grep requires a pattern';
@@ -1365,25 +1388,28 @@ Administrator. It usually boils down to these three things:
     }
 }},
 
-exit:{man: `USAGE: exit
+exit:{man: ()=> `USAGE: ${cmdInLang("exit")}
         Ends the command line browsing session and opens the currently loaded page in your usual GUI browser.`,
 do: () => {
 const now = new Date();
 window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true;return `Goodbye!\n\nLogged out at ${now.toLocaleString()}`;} } ,      
         
 
-            links: () => {
+            links: {man: ()=>`USAGE: ${cmdInLang("links")}
+            
+        Returns a numbered list of the links in the currently loaded dcument.`,
+                    do:() => {
                 if (!currentLinks || currentLinks.length === 0) {
                     return 'No links available. Load a page first using the Load command.';
                 }
                 return currentLinks.map((link, i) => 
                     `<span class="text-link">[${i + 1}]</span> <span class="text-anchor">${link.text}</span> -> ${link.href}</a>`
                 ).join('\n');
-            },
+            }},
 
-            follow: {man:`USAGE: follow [linknumber]
+            follow: {man: ()=>`USAGE: ${cmdInLang("follow")} [linknumber]
             
-            Loads the page indicated by linknumber, the number of a link in the currently loaded page. To see these numbers, use the 'links' command.`,
+            Loads the page indicated by linknumber, the number of a link in the currently loaded page. To see these numbers, use the '${cmdInLang("links")}' command.`,
                      do:async (num) => {
                 if (!currentLinks || currentLinks.length === 0) {
                     return 'No links available. Load a page first that contains links.';
@@ -1397,12 +1423,12 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
         
     
         
-reload: {man:`USAGE: reload
+reload: {man: ()=>`USAGE: ${cmdInLang("reload")}
 
         This reloads whatever page was last loaded. Useful if the page has changed since you loaded it.`,
          do:async () => {return doCommand("load")(currentUrl, false, true);}},
            
-        clear:{man:`USAGE: clear
+        clear:{man: ()=>`USAGE: ${cmdInLang("clear")}
         
         Clears the terminal contents and moves the command line prompt up to the top.`,
                do: () => {elements = document.getElementsByClassName("output");
@@ -1412,7 +1438,7 @@ reload: {man:`USAGE: reload
 return}
               },
         
-        load: {man: `USAGE load [url]
+        load: {man: ()=> `USAGE load [url]
         
         Load a web page. Once a page is loaded, you can DISPLAY, LINKS, RELOAD, or any of the other commands that act on loaded webpages.`,
                do: async (url, addToHistory = true, reload=false) => {
