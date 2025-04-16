@@ -37,6 +37,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory=`
 Version History:
+2025apr15 - change css to use variables and add commandOut to add hilight color for commands
 2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
 2025apr13 - add scaling to image command so ascii art doesn't wrap, add -a image option, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add image scaling readout, add clear command
 2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
@@ -55,6 +56,7 @@ To Dos:
 3.) add scale command to scale output
 4.) Maybe try to wrap and indent long lines at #terminal width in help etc. 
 5.) Maybe move languages into an attribute of commands, I dunno
+6.) Maybe need a better name. Clish? Wish? Wash? 
 `;
 
 let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
@@ -95,9 +97,12 @@ let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forc
 }
 </style>
 <style id="cli_doc_style">
-       :root {--cursorRight: 1 ;}
-body {  background: #1a1a1a;
-    color: #ccc; /* #3f3;*/ /* dimmer base green */
+       :root {--cursorRight: 1 ;
+--bgcolor: #1a1a1a;
+--textcolor: #c0c0c0;
+--commandcolor: #fff;}
+body {  background: var(--bgcolor);
+    color: var(--textcolor); /* #3f3;*/ /* dimmer base green */
 font-family: monospace;}
 .cliImgOut {
 /* font-size:.5em; nah, not sure I like this. */
@@ -114,7 +119,7 @@ font-family: monospace;}
 text-transform: uppercase;
 }
 .text-link {
-    color: #faf; /* #f5f; *//* bright magenta */
+    color: #8af; /*#fdf;*//* #faf;*/ /* #f5f; *//* bright magenta */
   font-size:10px;
 }
 .text-list {
@@ -124,13 +129,13 @@ text-transform: uppercase;
     color: #aff; /* #5ff;*/ /* bright cyan */
 }
 .text-img {
-color:#960; /*#960;*/
+color:#964; /*#960;*/
 }
 .text-bold {
     color: #fcc; /*#f99; */ /* bright white */
 }
 .text-anchor {
-    color: #9ef;/* #8ef; *//* bright white */
+    color: #cef;/#8de;*/ /* #9ef; *//* #8ef; *//* bright white */
 }
 .text-summary {
     color: #cfc;/* #9f9; */ /* bright white */
@@ -150,7 +155,7 @@ color:#960; /*#960;*/
 	/*font-size: .6875em;*/
 font-variant: small-caps;
 	/*display: block;*/
-    color:#8bc;/*8ac*//*#def;*/
+    /*color:#8bc;*//*8ac*//*#def;*/
 	font-weight: 400;
 	font-style: normal;
 
@@ -206,7 +211,11 @@ margin-inline:1px;
     display: inline-block;
     caret-color: transparent;
       height:inherit;
+      color:var(--commandcolor);
 }
+
+.prevcommand{color:var(--commandcolor);  }
+
 #prompt {
   min-width: fit-content;
 }
@@ -269,7 +278,7 @@ margin-inline:1px;
     </style>
 </head>
 <body><div id="terminal"><div class="output">*** KUPIETZ ARTS+CODE ***<p>&nbsp;&nbsp;&nbsp;&nbsp;7167 BYTES FREE<p>
-Welcome to CLI browsing mode.<p>Type '<span id="helplang">help</span>' for available commands.</div><div id="input-line" class="">
+Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">help</span>' for available commands.</div><div id="input-line" class="">
     <span id="prompt">$ </span>
     <div id="command-input" contenteditable="true" autofocus=""></div>
 </div>
@@ -350,7 +359,7 @@ commandInput.addEventListener('keydown', async (e) => {
         
         if (commandLine) {
             commandHistory.push(commandLine);
-            addOutput(`\n${promptSpan.textContent}${promptLineBreak}${commandLine}`);
+            addOutput(`\n${promptSpan.textContent}${promptLineBreak}<span class="prevcommand">${commandLine}</span>`);
             
             const result = await executeCommand(commandLine);
             if (result) {
@@ -1000,26 +1009,27 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
 
     
     function locCmd(commandIn) {
-   console.log("In locCmd for commandIn",commandIn,
-             "theseOptions[language]",theseOptions["language"],"languages[theseOptions[language]]",languages[theseOptions["language"]],"languages[theseOptions[language]][commandIn]",languages[theseOptions["language"]][commandIn] ||"");
-   
     result = (cmdInLang(commandIn)!=commandIn)? "" : (languages[theseOptions["language"]][commandIn] || commandIn); /* make it so when using a language, the original commands fail if alternatives are defined for them */
-    console.log("done locCmd for ",commandIn);
     return result;
   
     };
     
     function cmdInLang(commandIn,description="",length=0) {
- console.log("In cmdInLang. commandIn",commandIn,
-             "theseOptions[language]",theseOptions["language"],"cmdDict[theseOptions[language]]",cmdDict[theseOptions["language"]],"cmdDict[theseOptions[language]][commandIn]",cmdDict[theseOptions["language"]][commandIn] ||"");
    
-    theCommand=cmdDict[theseOptions["language"]][commandIn]||commandIn;
-    theOutput=theCommand+((theCommand && description)?" ":"")+description;
-    padding=Math.max(length-theOutput.length,0);
-    console.log ("done cmdInLang for ",commandIn);
-    return theOutput+" ".repeat(padding);
+    return cmdDict[theseOptions["language"]][commandIn]||commandIn;
+   
     }
     
+    
+    function cmdOut(commandIn,description="",length=0) {
+    firstCommand=cmdInLang(commandIn);
+    theCommand= '<span class="prevcommand">'+firstCommand+'</span>'; 
+     theFirstOutput=firstCommand+((firstCommand && description)?" ":"")+description;
+      theOutput=theCommand+((firstCommand && description)?" ":"")+description;
+    padding=Math.max(length-theFirstOutput.length,0);
+    return theOutput+" ".repeat(padding);
+    
+    }
     
   async function executeCommand(commandLine, canInterrupt = true) {
     isCommandRunning = true;
@@ -1054,7 +1064,7 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
             console.log(2,commandRaw,command);
             const cmd = commands[command];
             if (!cmd) {
-            return `\n?SYNTAX ERROR\n\nType '${cmdInLang("help")}' for available commands.`;
+            return `\n?SYNTAX ERROR\n\nType '${cmdOut("help")}' for available commands.`;
                /* return `Command not found: ${command}`; */
             }
             
@@ -1080,34 +1090,34 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
     
     
         const commands = { /* hid - load     : Load a website in text mode from help */
-        versions: {man: ()=>`USAGE: ${cmdInLang("versions")}
+        versions: {man: ()=>`USAGE: ${cmdOut("versions")}
         
         This displays the version history of this software, as well as other development-related info.`,
                  do:() => versionhistory},
        
-           help: {man: ()=>`Unfortunately the ${cmdInLang("help")} page for '${cmdInLang("help")}' has been recalled by the Department Of Redundancy Department.`,
+           help: {man: ()=>`Unfortunately the ${cmdOut("help")} page for '${cmdOut("help")}' has been recalled by the Department Of Redundancy Department.`,
                   do:(command="") => {
                   if (command=="") {theLength=30;return `
-Available ${theseOptions["language"]} commands. Use '${cmdInLang("help")} somecommand' to see more detailed info on a command:
-- ${cmdInLang("display","",theLength)} : Display the loaded page
-- ${cmdInLang("links","",theLength)} : List all links in the loaded page
-- ${cmdInLang("images","",theLength)} : List all image descriptions and URLs in the loaded page
-- ${cmdInLang("image","[-a, --ascii-art] imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
-- ${cmdInLang("follow","linknumber",theLength)} : Follow a link by its number
-- ${cmdInLang("back","",theLength)} : Go back to the previous page
-- ${cmdInLang("forward","",theLength)} : Go forward to the next page
-- ${cmdInLang("reload","",theLength)} : Reload last loaded page
-- ${cmdInLang("where","",theLength)} : Display the URL of the currently loaded page
-- ${cmdInLang("clear","",theLength)} : Clear the terminal output
-- ${cmdInLang("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
-- ${cmdInLang("exit","",theLength)} : End session and return to GUI browing mode
-- ${cmdInLang("help","[somecommand]",theLength)} : Show this help message, or detailed help on a single command
-- ${cmdInLang("versions","",theLength)} : Version history/changelog of this browser
-- ${cmdInLang("hint","",theLength)} : A mysterious command, I don't know what it does.
-- ${cmdInLang("","somecommand1 | somecommand2",theLength)} : Redirect output into another command such as 'grep' or 'more'
-- ${cmdInLang("more","",theLength)} : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
-- ${cmdInLang("grep","filterexpression",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
-- ${cmdInLang("","somecommand > filename.html",theLength)} : Save the output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
+Available ${theseOptions["language"]} commands. Use '${cmdOut("help")} somecommand' to see more detailed info on a command:
+- ${cmdOut("display","",theLength)} : Display the loaded page
+- ${cmdOut("links","",theLength)} : List all links in the loaded page
+- ${cmdOut("images","",theLength)} : List all image descriptions and URLs in the loaded page
+- ${cmdOut("image","imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
+- ${cmdOut("follow","linknumber",theLength)} : Follow a link by its number
+- ${cmdOut("back","",theLength)} : Go back to the previous page
+- ${cmdOut("forward","",theLength)} : Go forward to the next page
+- ${cmdOut("reload","",theLength)} : Reload last loaded page
+- ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
+- ${cmdOut("clear","",theLength)} : Clear the terminal output
+- ${cmdOut("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
+- ${cmdOut("exit","",theLength)} : End session and return to GUI browing mode
+- ${cmdOut("help","[somecommand]",theLength)} : Show this help message, or detailed help on a single command
+- ${cmdOut("versions","",theLength)} : Version history/changelog of this browser
+- ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does.
+- somecommand1 ${cmdOut("|","somecommand2",theLength-13)} : Redirect output into another command such as 'grep' or 'more'
+- ${cmdOut("more","",theLength)} : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
+- ${cmdOut("grep","filterexpression",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
+- somecommand ${cmdOut(">",'filename.html',theLength-12)} : Save the output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
 Optional startup URL paramaters (starred value is the default):
 - language [cli-html*|unix|basic|pig-latin]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
@@ -1125,9 +1135,9 @@ Optional startup URL paramaters (starred value is the default):
 {console.log("3. inside if.");return `\n${commands[locCmd(command)].man()}`|| "\nNo man page for "+command;} 
 else {return "\n?BAD VALUE - "+command;}
                   }}, /* extra verbiage: Execute a command with elevated privileges */
- options: {man: ()=>`USAGE: ${cmdInLang("options")} [parameter [value]]
+ options: {man: ()=>`USAGE: ${cmdOut("options")} [parameter [value]]
  
-            This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdInLang("help")}' command.) You can view or change the same set of options from the command line by using this command. '${cmdInLang("options")}' alone will list the currently set options. '${cmdInLang("options")} parametername' will show you the current setting for parametername. '${cmdInLang("options")} parametername value' will set parametername to value.`, 
+            This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdOut("help")}' command.) You can view or change the same set of options from the command line by using this command. '${cmdOut("options")}' alone will list the currently set options. '${cmdOut("options")} parametername' will show you the current setting for parametername. '${cmdOut("options")} parametername value' will set parametername to value.`, 
                        
             do:(option,value) =>   { if (option)
  {
@@ -1138,7 +1148,7 @@ else {return "\n?BAD VALUE - "+command;}
              setCrt(theseOptions["crt"]);
              updatePrompt();
              addOutput(option+" is '"+theseOptions[option]+"'");
-             if (option=="language") {addOutput(`\nType '${cmdInLang("help")}' for available commands.`);}
+             if (option=="language") {addOutput(`\nType '${cmdOut("help")}' for available commands.`);}
  } }
                              else
                              {for (const opt in theseOptions) {theseOptions[opt]?addOutput(opt+" is '"+theseOptions[opt]+"'\n"):"";} }
@@ -1147,12 +1157,12 @@ else {return "\n?BAD VALUE - "+command;}
                               
  }},
        
-        where: {man: ()=>`USAGE: ${cmdInLang("where")}
+        where: {man: ()=>`USAGE: ${cmdOut("where")}
         
         Simply outputs the URL of the currently loaded page.`,
                 do:()=>currentUrl},
         
-hint: {man: ()=>`There is no man page for hint.`,do:() => {let hints=[`If you ${cmdInLang("load")} a can of URLs, you do so at your own risk.`,
+hint: {man: ()=>`There is no man page for hint.`,do:() => {let hints=[`If you ${cmdOut("load")} a can of URLs, you do so at your own risk.`,
                     "You can do as the su say, not as the su do.",
 "Don't be startled by hollow voices. It's not personal.", 
 "There are things here Indiana Jones would tremble in fear of.",
@@ -1167,12 +1177,12 @@ hint: {man: ()=>`There is no man page for hint.`,do:() => {let hints=[`If you ${
               
        /*  crt: (color) => {setCrt(color);
             },*/
-xyzzy: {man: ()=>`USAGE: ${cmdInLang("xyzzy")}
+xyzzy: {man: ()=>`USAGE: ${cmdOut("xyzzy")}
 
         It is pitch black. You are likely to be eaten by a grue.`,
         do:() => {return "\nA hollow voice says 'fool.'";}},
             
-        display: {man: ()=>`USAGE: ${cmdInLang("display")}
+        display: {man: ()=>`USAGE: ${cmdOut("display")}
         
         Display the currently loaded page.`,
                   do:async (url="") => {
@@ -1183,9 +1193,9 @@ xyzzy: {man: ()=>`USAGE: ${cmdInLang("xyzzy")}
                 return doCommand("load")(url || currentUrl, false);
             }}, 
 
-          back: {man: ()=>`USAGE: ${cmdInLang("back")}
+          back: {man: ()=>`USAGE: ${cmdOut("back")}
         
-        Reloads the previous page in the browsing history. Use '${cmdInLang("forward")}' to move forward again.`,
+        Reloads the previous page in the browsing history. Use '${cmdOut("forward")}' to move forward again.`,
 do:async () => {
     if (currentHistoryIndex <= 0) {
         return 'No previous pages in history.';
@@ -1199,9 +1209,9 @@ do:async () => {
     return result;
 }},
         
-        forward: {man: ()=>`USAGE: ${cmdInLang("forward")}
+        forward: {man: ()=>`USAGE: ${cmdOut("forward")}
         
-        If you have previously used '${cmdInLang("back")}' to move backwards in the browsing history, this reloads the following page in the history.`,
+        If you have previously used '${cmdOut("back")}' to move backwards in the browsing history, this reloads the following page in the history.`,
                   do:async () => {
     if (currentHistoryIndex >= pageHistory.length - 1) {
         return 'No forward pages in history.';
@@ -1215,9 +1225,9 @@ do:async () => {
     return result;
 }},
         
-image: {man: ()=>`USAGE: ${cmdInLang("image")} [imagenumber]
+image: {man: ()=>`USAGE: ${cmdOut("image")} [imagenumber]
 
-            Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the '${cmdInLang("images")}' command.`,
+            Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the '${cmdOut("images")}' command.`,
         
         do:async (param1,param2) => {
 
@@ -1301,7 +1311,7 @@ imageUrl = imageArray[num]["url"]; } else {return "Invalid image number: "+num;}
 ,
 
 
- images: {man: ()=>`USAGE: ${cmdInLang("images")}
+ images: {man: ()=>`USAGE: ${cmdOut("images")}
  
         Returns a numbered list of the images in the currently loaded dcument, with alt text, URLs, and dimensions.`,
           do: () => { let outImages="";for (const imNum in imageArray)
@@ -1371,7 +1381,7 @@ Administrator. It usually boils down to these three things:
     return '';
 }},
  snake: {man: ()=>"Sorry, Indi.",do:() => {calcAssistance()}},
-        grep: {man: ()=>`USAGE: ${cmdInLang("somecommand")} | grep [searchstring]
+        grep: {man: ()=>`USAGE: ${cmdOut("somecommand")} | grep [searchstring]
         
         Filters the output of somecommand so that only lines that contain searchstring will show. The match is case-insensitive: "THE" and "The" are considered to be the same thing. Searchstring can be a regular expression (if you don't know what that is, you don't need to.) Regular expressions should not be surrounded by //. `,
                do:(pattern, prevOutput) => {
@@ -1384,18 +1394,18 @@ Administrator. It usually boils down to these three things:
         const matches = lines.filter(line => regexp.test(line));
         return matches.join('\n');
     } catch (e) {
-        return `Error: Invalid ${cmdInLang("grep")} expression - ${e.message}`;
+        return `Error: Invalid ${cmdOut("grep")} expression - ${e.message}`;
     }
 }},
 
-exit:{man: ()=> `USAGE: ${cmdInLang("exit")}
+exit:{man: ()=> `USAGE: ${cmdOut("exit")}
         Ends the command line browsing session and opens the currently loaded page in your usual GUI browser.`,
 do: () => {
 const now = new Date();
 window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true;return `Goodbye!\n\nLogged out at ${now.toLocaleString()}`;} } ,      
         
 
-            links: {man: ()=>`USAGE: ${cmdInLang("links")}
+            links: {man: ()=>`USAGE: ${cmdOut("links")}
             
         Returns a numbered list of the links in the currently loaded dcument.`,
                     do:() => {
@@ -1407,9 +1417,9 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
                 ).join('\n');
             }},
 
-            follow: {man: ()=>`USAGE: ${cmdInLang("follow")} [linknumber]
+            follow: {man: ()=>`USAGE: ${cmdOut("follow")} [linknumber]
             
-            Loads the page indicated by linknumber, the number of a link in the currently loaded page. To see these numbers, use the '${cmdInLang("links")}' command.`,
+            Loads the page indicated by linknumber, the number of a link in the currently loaded page. To see these numbers, use the '${cmdOut("links")}' command.`,
                      do:async (num) => {
                 if (!currentLinks || currentLinks.length === 0) {
                     return 'No links available. Load a page first that contains links.';
@@ -1423,12 +1433,12 @@ window.location.href=(currentUrl?currentUrl:originalURL); currentMoreOutput=true
         
     
         
-reload: {man: ()=>`USAGE: ${cmdInLang("reload")}
+reload: {man: ()=>`USAGE: ${cmdOut("reload")}
 
         This reloads whatever page was last loaded. Useful if the page has changed since you loaded it.`,
          do:async () => {return doCommand("load")(currentUrl, false, true);}},
            
-        clear:{man: ()=>`USAGE: ${cmdInLang("clear")}
+        clear:{man: ()=>`USAGE: ${cmdOut("clear")}
         
         Clears the terminal contents and moves the command line prompt up to the top.`,
                do: () => {elements = document.getElementsByClassName("output");
@@ -1631,7 +1641,7 @@ return}
     
     
      function setCrt (color) {
-        let thisColor=""; let bkColor="";
+        let thisColor=""; let bkColor="";let cmdColor="";
         if (color=="invert") {
         document.documentElement.style.filter = ((document.documentElement.style.filter)=="invert()")?"":"invert()";
         
@@ -1644,26 +1654,28 @@ return}
         document.getElementById("terminal").style.backgroundSize= "160px 160px";
         document.getElementById("terminal").style.filter="invert()";
         document.getElementById("terminal").style.backgroundAttachment="local";
-        
+         thisColor = "#e5e5e5";  bkColor="#3f3f3f"; cmdColor="#fff"; 
+              document.querySelector(':root').style.setProperty("--bgcolor",bkColor); document.querySelector(':root').style.setProperty("--textcolor",thisColor); document.querySelector(':root').style.setProperty("--commandcolor",cmdColor);
+  
         }
      else {
       document.documentElement.style.filter ="";
      document.getElementById("terminal").style.background="";
      document.getElementById("terminal").style.filter="";
      switch(color) {
-       
-        case 'amber':  thisColor = "#FFBF00";  bkColor="#000"; break;
-        case 'green':  thisColor = "#00CC00";  bkColor="#000"; break;
-        case 'invert':  thisColor = "#000";  bkColor="#ccc"; break;
+          
+        case 'amber':  thisColor = "#FFBF00";  bkColor="#1a1a1a";  cmdColor="#ffd6aa"; break;
+        case 'green':  thisColor = "#00CC00";  bkColor="#1a1a1a"; cmdColor="#00FF00"; break;
+        case 'invert':  thisColor = "#1a1a1a";  bkColor="#c0c0c0"; cmdColor="#000"; break;
         case 'bw':
         case 'gray':
         case 'white':
-        case 'monochrome':  thisColor = "#CCCCCC";  bkColor="#000"; break;
+        case 'monochrome':  thisColor = "#c0c0c0";  bkColor="#1a1a1a"; cmdColor="#fff"; break;
         case 'commodore': 
         case 'commodore64': 
-        case 'c64':   thisColor = "#CCF";     document.getElementById("terminal").style.background="#006"; bkColor="#CCF"; break;}
+        case 'c64':   thisColor = "#CCF";     document.getElementById("terminal").style.background="#006"; bkColor="#CCF"; cmdColor="#CCF"; break;}
         
-        document.body.style.background=bkColor; document.body.style.color=thisColor;}}
+        document.querySelector(':root').style.setProperty("--bgcolor",bkColor); document.querySelector(':root').style.setProperty("--textcolor",thisColor); document.querySelector(':root').style.setProperty("--commandcolor",cmdColor);}}
     function addDicts() /* yep, I hid more down here */ {let result= 
                  { "latin":{"retrocedere":"back","ostende":"display","imaginum":"images","imago":"image","purgare":"clear","terminus":"exit","sequi":"follow","progredi":"forward","grep":"grep","auxilium":"help","admonitus":"hint","nexuum":"links","plus":"more","optiones":"options","refice":"reload","versionum":"versions","ubi":"where"},
                  "short":{"<":"back",".":"display","*":"load","^":"exit","%":"images",",":"image","-":"clear","!":"follow",">":"forward","/":"grep","?":"help",";":"hint","+":"links","&":"more","~":"options","=":"reload","#":"versions","@":"where"},
