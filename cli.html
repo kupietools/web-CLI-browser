@@ -37,7 +37,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory=`
 Version History:
-2025apr15 - change css to use variables and add commandOut to add hilight color for commands
+2025apr15 - change css to use variables and add commandOut to add hilight color for commands, allow options to accept "default" as value, Make 'pet' default prompt. Fix regression error where PET prompt wasn't putting cursor on next line.
 2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
 2025apr13 - add scaling to image command so ascii art doesn't wrap, add -a image option, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add image scaling readout, add clear command
 2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
@@ -49,6 +49,7 @@ Version History:
 Known bugs:
 1.) if you scroll back the history and enter a new comment, history index doesn't reset to the end.
 2.) Doesn't clear the image array if you explicitly load a new page
+3.) Some options don't throw errors if you give them bad values, they're just ignored.
 
 To Dos:
 1.) add -i flag to make image list show images. 
@@ -57,9 +58,10 @@ To Dos:
 4.) Maybe try to wrap and indent long lines at #terminal width in help etc. 
 5.) Maybe move languages into an attribute of commands, I dunno
 6.) Maybe need a better name. Clish? Wish? Wash? 
+
 `;
 
-let defaultOptions={prompt:"unix",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
+let defaultOptions={prompt:"pet",language:"cli-html",flavor:"",starturl:"",forceuppercase:false,crt:"bw"};
 
  let languages={ /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
                  /* Defining a synonym for the command will DISABLE the default form of the command. */
@@ -288,7 +290,7 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">he
     
     
  const origCRT= defaultOptions["crt"];
-     let theseOptions = defaultOptions; /* all acceptable url parameters must be listed here or they will be ignored */
+     let theseOptions = Object.assign({},defaultOptions); /* all acceptable url parameters must be listed here or they will be ignored */
 
     theseOptions["language"]  = theseOptions["language"] || "cli-html";
     languages[theseOptions["language"]] = languages[theseOptions["language"]] || {};
@@ -308,8 +310,7 @@ Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">he
     let prompts={"unix":()=>{return currentUrl ? `[${currentUrl}]$ ` : '$ ';},
                  "apple":()=>'] ',"pet":()=>"READY."};
     let promptLineBreak="";
-    if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}
-
+   
      if (origCRT!= theseOptions["crt"] ) {setCrt(theseOptions["crt"]);}
     const cmdDict = {};
     // Process each language
@@ -461,6 +462,8 @@ function chToPixels() {
     
     
 function updatePrompt() {
+ if (theseOptions["prompt"]=="pet") {document.getElementById("input-line").style.flexDirection="column";promptLineBreak="\n";}else{document.getElementById("input-line").style.flexDirection="row";promptLineBreak="";}
+
     promptSpan.textContent = prompts[theseOptions.prompt]();/*was currentUrl ? `[${currentUrl}]$ ` : '$ '; */
 
 }
@@ -1064,7 +1067,7 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
             console.log(2,commandRaw,command);
             const cmd = commands[command];
             if (!cmd) {
-            return `\n?SYNTAX ERROR\n\nType '${cmdOut("help")}' for available commands.`;
+            return `\n?SYNTAX ERROR - Type '${cmdOut("help")}' for available commands.`;
                /* return `Command not found: ${command}`; */
             }
             
@@ -1119,12 +1122,11 @@ Available ${theseOptions["language"]} commands. Use '${cmdOut("help")} somecomma
 - ${cmdOut("grep","filterexpression",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
 - somecommand ${cmdOut(">",'filename.html',theLength-12)} : Save the output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
-Optional startup URL paramaters (starred value is the default):
+Optional startup URL paramaters (starred value is the default if unspecified):
 - language [cli-html*|unix|basic|pig-latin]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
-- prompt [unix*|pet|apple]                    : Change style of command prompt to match various advanced platforms
+- prompt [unix|pet*|apple]                    : Change style of command prompt to match various advanced platforms
 - crt [bw*|green|amber]                       : Choose between popular CRT colors. There may be some others available
 - forceuppercase [false*|true]                : Force all uppercase text for that vintage 1980 personal computer experience
-
 `;}
                   else
 
@@ -1135,20 +1137,26 @@ Optional startup URL paramaters (starred value is the default):
 {console.log("3. inside if.");return `\n${commands[locCmd(command)].man()}`|| "\nNo man page for "+command;} 
 else {return "\n?BAD VALUE - "+command;}
                   }}, /* extra verbiage: Execute a command with elevated privileges */
- options: {man: ()=>`USAGE: ${cmdOut("options")} [parameter [value]]
+ options: {man: ()=>`USAGE: ${cmdOut("options")} [parameter [value|default]]
  
-            This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdOut("help")}' command.) You can view or change the same set of options from the command line by using this command. '${cmdOut("options")}' alone will list the currently set options. '${cmdOut("options")} parametername' will show you the current setting for parametername. '${cmdOut("options")} parametername value' will set parametername to value.`, 
+            This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdOut("help")}' command.) You can view or change the same set of options from the command line by using this command. '${cmdOut("options")}' alone will list the currently set options. '${cmdOut("options")} parametername' will show you the current setting for parametername. '${cmdOut("options")} parametername value' will set parametername to value. You can pass any option a value of "default" to return to the original session start value.`, 
                        
             do:(option,value) =>   { if (option)
  {
+ const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+console.log("xyz",value, urlParams.get(option), defaultOptions[option]);
+ value=(value=="default")?(urlParams.get(option)?urlParams.get(option):defaultOptions[option]):value;
   if ((option=="language" && languages[value]==undefined) || theseOptions[option]==undefined) {return "\n?ILLEGAL VALUE\n";}
  if (value) {
             
              theseOptions[option]=value;
              setCrt(theseOptions["crt"]);
+  
+   
              updatePrompt();
-             addOutput(option+" is '"+theseOptions[option]+"'");
-             if (option=="language") {addOutput(`\nType '${cmdOut("help")}' for available commands.`);}
+             addOutput("\n"+option+" is '"+theseOptions[option]+"'"+(option=="language"?` - Type '${cmdOut("help")}' for available commands.`:""));
+        
  } }
                              else
                              {for (const opt in theseOptions) {theseOptions[opt]?addOutput(opt+" is '"+theseOptions[opt]+"'\n"):"";} }
