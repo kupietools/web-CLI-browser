@@ -3,6 +3,8 @@ Currently a browser-based frontend for browsing my personal website via CLI, wri
 
 This README is much less frequently updated than the code. Please see the code or run "help" in the browser CLI for more up-to-date information.
 
+If you host this on your server, code runs an update check when it starts and lets you know if this repo has been updated. 
+
 Available commands in cli-html:
 - display                    : Display the currently loaded page
 - links                      : Show all links in the currently loaded page
