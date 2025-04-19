@@ -39,7 +39,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory=`
 Version History:
-2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability,
+2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability, fix so image list clears on new page load
 2025apr16 - add optional version checking against Github master, added an xkcd joke (by request of captjamesg)
 2025apr15 - change css to use variables and add commandOut to add hilight color for commands, allow options to accept "default" as value, Make 'pet' default prompt. Fix regression error where PET prompt wasn't putting cursor on next line. Fix terminal padding so LPT crt looks nice. Put a little dashicons globe next to the "loaded' message but then commented it out.
 2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
@@ -986,7 +986,7 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
      async function processHTML(html, url) {
 
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html  .replace(/&lt;/gi, '&amp;lt;'), 'text/html'); /* DOMparser automatically renders entities in text so code in the bodies made with fake entities renters is real code in the browser if you don't substitute. */
+    const doc = parser.parseFromString(html.replace(/&lt;/gi, '&amp;lt;'), 'text/html'); /* DOMparser automatically renders entities in text so code in the bodies made with fake entities renters is real code in the browser if you don't substitute. */
     
     const linkMap = new Map();
     const links = Array.from(doc.querySelectorAll('a')).map((a, index) => {
@@ -1020,7 +1020,8 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
     }
 
        
-     
+    imageNum=0;
+     imageArray=[]; /* clear imagearray before processing new page */
     textContent += processNode(doc.body, linkMap);
   
     textContent = textContent
@@ -1143,32 +1144,32 @@ if (classOut) {content += `<span class="${classOut}"></span>`;}
                   if (command=="") {theLength=30;return `
 Available ${theseOptions["language"]} commands. Use '${cmdOut("help")} somecommand' to see more detailed info on a command:
 
-Loading and viewing web resources: 
+Loading and viewing web content: 
 - ${cmdOut("display","",theLength)} : Display the currently loaded page
 - ${cmdOut("links","",theLength)} : List all links in the loaded page
 - ${cmdOut("images","",theLength)} : List all image descriptions and URLs in the loaded page
 - ${cmdOut("image","imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
 
-Navigating the web:
+Navigating web pages:
 - ${cmdOut("follow","linknumber",theLength)} : Follow a link in the current page by its number
 - ${cmdOut("back","",theLength)} : Go back to the previously loaded page
 - ${cmdOut("forward","",theLength)} : Go forward to the next page
 - ${cmdOut("reload","",theLength)} : Reload the currently loaded page
 - ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
 
-Terminal info:
+Refining & Controlling Output:
+- commandname1 ${cmdOut("|","commandname2",theLength-13)} : Redirect output into another command such as 'grep' or 'more'
+- ${cmdOut("more","",theLength)} : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
+- ${cmdOut("grep","filterexpression",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
+- commandname ${cmdOut(">",'filename.html',theLength-12)} : Save commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
+
+Controlling this terminal:
 - ${cmdOut("clear","",theLength)} : Clear the terminal output
 - ${cmdOut("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 - ${cmdOut("exit","",theLength)} : End session and return to GUI browing mode
 - ${cmdOut("versions","",theLength)} : Version history/changelog of this CLI browser
 - ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does.
 - ${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
-
-Herding Output:
-- commandname1 ${cmdOut("|","commandname2",theLength-13)} : Redirect output into another command such as 'grep' or 'more'
-- ${cmdOut("more","",theLength)} : Use after pipe (|) to paginate output. [space] to continue. Esc, ctrl-c, or q to quit
-- ${cmdOut("grep","filterexpression",theLength)} : Use after pipe (|) to filter output by regular expression. Case-insensitive, no delimiters
-- commandname ${cmdOut(">",'filename.html',theLength-12)} : Save commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
 Optional startup URL paramaters (starred value is the default if unspecified):
 - &${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
