@@ -33,44 +33,10 @@ Seeking work as of this writing. Somebody please offer me a job.
 -->
 
 <head>
-<script id="global-settings">/* some user-settable defaults */
+<script id="global-settings">
 
-let versionhistory = `
-Version History:
-2025apr22 - change page loaded message to suggest 'display' command more clearly. 
-2025apr20 - Add social media browsing meta tags
-2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability, fix so image list clears on new page load
-2025apr16 - add optional version checking against Github master, added an xkcd joke (by request of captjamesg)
-2025apr15 - change css to use variables and add commandOut to add hilight color for commands, allow options to accept "default" as value, Make 'pet' default prompt. Fix regression error where PET prompt wasn't putting cursor on next line. Fix terminal padding so LPT crt looks nice. Put a little dashicons globe next to the "loaded' message but then commented it out.
-2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
-2025apr13 - add scaling to image command so ascii art doesn't wrap, add -a image option, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add image scaling readout, add clear command
-2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
-2025apr11 - add code to move cursor with arrows and clicks in command line
-2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
-2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
-2025apr8 - first working version
+/*** some user-settable defaults ***/
 
-Known bugs:
-1.) if you scroll back the history and enter a new comment, history index doesn't reset to the end.
-2.) Doesn't clear the image array if you explicitly load a new page
-3.) Some options don't throw errors if you give them bad values, they're just ignored.
-
-To Dos:
-1.) add -i flag to make image list show images. 
-2.) Need to test if noscript is handled correctly now
-3.) add scale command to scale output
-4.) Maybe try to wrap and indent long lines at #terminal width in help etc. 
-5.) Maybe move languages into an attribute of commands, I dunno
-6.) Maybe need a better name. Clish? Wish? Wash? 
-7.) An option to choose the cursor: block, underscore, pipe
-8.) Make the update checking just check the latest update date in versionhistory
-9.) Allow choosing ascii set for ascii art? Maybe even custom set from user?
-10.) Maybe a parameter to start it with an initial command, and/or without loading a page?
-
-News:
-• Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
-• You can have this front end for your own website! Grab it at https://github.com/kupietools/web-CLI-browser.
-`;
 
 let defaultOptions = {
     /* These are the default settings used if nothing specified via url parameter or command line. 
@@ -135,7 +101,7 @@ let languages = {
         "inkslay": "links",
         "oremay": "more",
         "eloadray": "reload",
-        "ersionsvay": "versions",
+        "infoway": "info",
         "udosay": "sudo",
         "akesnay": "snake",
         "options": "optionsway"
@@ -144,6 +110,48 @@ let languages = {
 };
 
 /* end user settings */
+
+let info={
+versions : `
+Version History:
+2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this
+2025apr22 - change page loaded message to suggest 'display' command more clearly. 
+2025apr20 - Add social media browsing meta tags
+2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability, fix so image list clears on new page load
+2025apr16 - add optional version checking against Github master, added an xkcd joke (by request of captjamesg)
+2025apr15 - change css to use variables and add commandOut to add hilight color for commands, allow options to accept "default" as value, Make 'pet' default prompt. Fix regression error where PET prompt wasn't putting cursor on next line. Fix terminal padding so LPT crt looks nice. Put a little dashicons globe next to the "loaded' message but then commented it out.
+2025apr14 - fix regression error introduced by using ';' instead of ',' in arrays due to terrible habits reinforced by FileMaker, refactor how commands are executed to begin allowing inclusion of manpages and other meta information, get manpages going, cause click on terminal to focus command line element, minor css color changes. 
+2025apr13 - add scaling to image command so ascii art doesn't wrap, add -a image option, fix event handlers so ArrowUp/ArrowDown position block cursor at end of line, add image scaling readout, add clear command
+2025apr12 - update page title to reflect loaded page, add undocumented feature to let Display load other URLs or follow links, add dashicon, add redone image placeholders with saved image array and "images" commands, add image display commands
+2025apr11 - add code to move cursor with arrows and clicks in command line
+2025apr10 - for consistency, have it stop showing page automatically upon load and only use Display to view, add some fun display options, better formatting for help, handle invalid language selections, added a few more languages for fun. 
+2025apr9 - add '>' download redirect, versions command, URL parameter settings for prompts/languages/force all caps/other secret sauce, add 'option' command to manipulate settings, add message to confirm page has loaded, add case insensitivitinositude to commands.
+2025apr8 - first working version
+`,
+
+bugs:`Known bugs:
+1.) if you scroll back the history and enter a new comment, history index doesn't reset to the end.
+2.) Doesn't clear the image array if you explicitly load a new page
+3.) Some options don't throw errors if you give them bad values, they're just ignored.
+`,
+
+todo:`To Dos:
+1.) add -i flag to make image list show images. 
+2.) Need to test if noscript is handled correctly now
+3.) add scale command to scale output
+4.) Maybe try to wrap and indent long lines at #terminal width in help etc. 
+5.) Maybe move languages into an attribute of commands, I dunno
+6.) Maybe need a better name. Clish? Wish? Wash? 
+7.) An option to choose the cursor: block, underscore, pipe
+8.) Make the update checking just check the latest update date in versionhistory
+9.) Allow choosing ascii set for ascii art? Maybe even custom set from user?
+10.) Maybe a parameter to start it with an initial command, and/or without loading a page?
+`,
+news:`News:
+• Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
+• You can have this front end for your own website! Grab it at https://github.com/kupietools/web-CLI-browser.
+`
+};
 
 
 </script>
@@ -1244,11 +1252,27 @@ async function executeCommand(commandLine, canInterrupt = true) {
 
 const commands = {
     /* hid - load     : Load a website in text mode from help */
-    versions: {
-        man: () => `USAGE: ${cmdOut("versions")}
+    info: {
+        man: () => `USAGE: ${cmdOut("info")} [news|versions|bugs|todo]
         
-        This displays the version history of this software, as well as other development-related info.`,
-        do: () => versionhistory
+        This displays news, version history of this software, know bugs, or developer's to-do list. You may enter multiple options separated by a comma, or don't specify any option to display all.`,
+        do: (options) => {
+        let theOptions = options?options.split(","):[];
+        let index=0;
+        if (theOptions.length==0) {
+        theOptions = Object.keys(info);
+        } else {
+        for (const opt of theOptions) {
+                                      if(info[opt] == undefined) {return "\n?BAD VALUE - "+opt+". Type '"+cmdOut('help')+" "+cmdOut('info')+"' for options.";} else {theOptions[opt] = info[opt]; }
+                                      }
+        }
+        
+        let output="";
+        for (const outOpt of theOptions) {
+        output += (outOpt==theOptions[0]?"":"\n")+info[outOpt];
+        }
+        return output;
+        }
     },
 
     help: {
@@ -1280,11 +1304,11 @@ Controlling & filtering output:
 
 Controlling this terminal:
 - ${cmdOut("clear","",theLength)} : Clear the terminal output
-- ${cmdOut("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 - ${cmdOut("exit","",theLength)} : End session and return to GUI browing mode
-- ${cmdOut("versions","",theLength)} : Version history/changelog, latest news, and other developer info about this CLI browser
-- ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does.
+- ${cmdOut("info","",theLength)} : Version history/changelog, latest news, and other developer info about this CLI browser
+- ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
 - ${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
+- ${cmdOut("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value of parameter, omit both to list all current values
 
 Optional startup URL paramaters (starred value is the default if unspecified):
 - ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
@@ -1772,12 +1796,13 @@ Administrator. It usually boils down to these three things:
 /**** end of commands definition ***/
 
 document.addEventListener('keydown', async (e) => {
-    if (e.ctrlKey && e.key === 'c') {
+    if (e.ctrlKey && (e.key === 'c' ||e.key === 'z')  ) {
         e.preventDefault();
-
+let sigOut = e.key==='c'?SIGNALS.SIGINT:SIGNALS.SIGTSTP;
         if (currentMoreOutput) {
             const cancelMsg = currentMoreOutput.cancel();
-            addOutput(SIGNALS.SIGINT);
+            addOutput("\n"+sigOut);
+     
             currentMoreOutput = null;
             updatePrompt();
             return;
@@ -1785,36 +1810,36 @@ document.addEventListener('keydown', async (e) => {
 
         if (isCommandRunning && currentCommand?.canInterrupt) {
             currentCommand = null;
-            displaySignal(SIGNALS.SIGINT);
+            displaySignal("\n"+sigOut);
+      
+        
             updatePrompt();
             return;
         }
 
         if (!isCommandRunning) {
-            displaySignal(SIGNALS.SIGINT);
-            updatePrompt();
+      /* No, don't know why this was here, shouldn't do anything if no command
+             displaySignal("\n"+SIGNALS.SIGINT);
+     
+            updatePrompt();   */
             return;
         }
     }
 
-    if (e.ctrlKey && e.key === 'z') {
-        e.preventDefault();
-        displaySignal(SIGNALS.SIGTSTP);
-        return;
-    }
 
-    if (e.ctrlKey && e.key === '\\') {
+   /* don't know why this was here
+    *  if (e.ctrlKey && e.key === '\\') {
         e.preventDefault();
-        displaySignal(SIGNALS.SIGQUIT);
+        displaySignal("\n"+SIGNALS.SIGQUIT);
         return;
-    }
+    } */
 
     if (currentMoreOutput) {
         e.preventDefault();
 
         if (e.key === 'Escape' || e.key === 'q') {
             const cancelMsg = currentMoreOutput.cancel();
-            addOutput(cancelMsg);
+            addOutput("\n"+cancelMsg);
             currentMoreOutput = null;
             updatePrompt();
             return;
@@ -1986,7 +2011,7 @@ function addDicts() /* yep, I hid more down here */ {
             "plus": "more",
             "optiones": "options",
             "refice": "reload",
-            "versionum": "versions",
+            "noticia": "info",
             "ubi": "where"
         },
         "short": {
@@ -2006,7 +2031,7 @@ function addDicts() /* yep, I hid more down here */ {
             "&": "more",
             "~": "options",
             "=": "reload",
-            "#": "versions",
+            "#": "info",
             "@": "where"
         },
         "pirate": {
@@ -2026,7 +2051,7 @@ function addDicts() /* yep, I hid more down here */ {
             "spyglass": "more",
             "armaments": "options",
             "arrrr": "reload",
-            "manifest": "versions",
+            "manifest": "info",
             "ahoy": "where"
         }
     };
@@ -2259,23 +2284,26 @@ async function initialize() {
 
 
 async function checkForUpdates() {
+console.log("checking for updates...");
     try {
         // Get the current version history from the page
         const currentScript = document.getElementById('global-settings');
-        const currentVersionMatch = currentScript.textContent.match(/(let|var|const) versionhistory=`([\s\S]*?)`[ \r\t]*;/) || currentScript.textContent.match(/(let|var|const) versionhistory='([\s\S]*?)'[ \r\t]*;/) || currentScript.textContent.match(/(let|var|const) versionhistory="([\s\S]*?)"[ \r\t]*;/);
-        const currentVersion = currentVersionMatch ? currentVersionMatch[2] : '';
+        const currentVersionMatch = currentScript.textContent.match(/versions[\r\n\t ]*:[\r\n\t ]*`([\s\S]*?)`[ \r\t]*[,;]/) || currentScript.textContent.match(/versions[\r\n\t ]*:[\r\n\t ]*'([\s\S]*?)'[ \r\t]*[,;]/) || currentScript.textContent.match(/versions[\r\n\t ]*:[\r\n\t ]*"([\s\S]*?)"[ \r\t]*[,;]/);
+        const currentVersion = currentVersionMatch ? currentVersionMatch[1] : '';
         // Fetch the latest version from GitHub
         const response = await fetch(`https://raw.githubusercontent.com/${githubInfo.username}/${githubInfo.reponame}/${githubInfo.branch}/${githubInfo.filename}`);
         const text = await response.text();
 
         // Extract version history from the fetched content
-        const latestVersionMatch = text.match(/(let|var|const) versionhistory=`([\s\S]*?)`[ \r\t]*;/) || text.match(/(let|var|const) versionhistory='([\s\S]*?)'[ \r\t]*;/) || text.match(/(let|var|const) versionhistory="([\s\S]*?)"[ \r\t]*;/);
-        const latestVersion = latestVersionMatch ? latestVersionMatch[2] : '';
+        const latestVersionMatch = text.match(/versions[\r\n\t ]*:[\r\n\t ]*`([\s\S]*?)`[ \r\t]*[,;]/) || text.match(/versions[\r\n\t ]*:[\r\n\t ]*'([\s\S]*?)'[ \r\t]*[,;]/) || text.match(/versions[\r\n\t ]*:[\r\n\t ]*"([\s\S]*?)"[ \r\t]*[,;]/);
+        const latestVersion = latestVersionMatch ? latestVersionMatch[1] : '';
         // Compare versions
-        if (githubInfo.updateChecking && latestVersion && currentVersion !== latestVersion) {
+        if (githubInfo.updateChecking && currentVersion !== latestVersion) {
             /*  document.getElementById('updateBanner').style.display = 'block'; */
-            addOutput("\nThe version of this browser on Github is different from this local version. You may want to check the repo at " + `https://github.com/${githubInfo.username}/${githubInfo.reponame}/${githubInfo.filename}` + " and download the more recent version if necessary.\n");
+            addOutput("\nThe version of this browser on Github is different from this local version. You may want to check the repo at " + `https://github.com/${githubInfo.username}/${githubInfo.reponame}/${githubInfo.filename}` + " and download the more recent version if necessary. Set githubInfo.updateChecking to false in the app code to disable this message.\n\n");
+        updatePrompt();
         }
+    console.log("currentVersionMatch",currentVersionMatch);console.log("currentVersion",currentVersion);console.log("text",text);console.log("latestVersionMatch",latestVersionMatch);console.log("latestVersion",latestVersion);
     } catch (error) {  console.log ("Error checking for github update", e);
         if (githubInfo.updateChecking) {
             addOutput("There was an error checking for updates: " + error + "\n");
@@ -2291,9 +2319,11 @@ function doCommand(command) {
 }
 
 initialize();
+    
+    checkForUpdates();
 
 // Check for updates every hour
-checkForUpdates();
+
 /*   setInterval(checkForUpdates, 60 * 60 * 1000); */</script>
 </body>
 </html>
