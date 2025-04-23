@@ -37,6 +37,7 @@ Seeking work as of this writing. Somebody please offer me a job.
 
 let versionhistory = `
 Version History:
+2025apr22 - change page loaded message to suggest 'display' command more clearly. 
 2025apr20 - Add social media browsing meta tags
 2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability, fix so image list clears on new page load
 2025apr16 - add optional version checking against Github master, added an xkcd joke (by request of captjamesg)
@@ -65,9 +66,15 @@ To Dos:
 8.) Make the update checking just check the latest update date in versionhistory
 9.) Allow choosing ascii set for ascii art? Maybe even custom set from user?
 10.) Maybe a parameter to start it with an initial command, and/or without loading a page?
+
+News:
+• Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
+• You can have this front end for your own website!
 `;
 
 let defaultOptions = {
+    /* These are the default settings used if nothing specified via url parameter or command line. 
+     * Any parameter not listed with a default here will be ignored. */
     prompt: "pet",
     language: "cli-html",
     flavor: "",
@@ -75,7 +82,7 @@ let defaultOptions = {
     allcaps: false,
     crt: "bw"
 };
-/*These are the default settings used if nothing specified via url parameter or command line. */
+
 
 let languages = {
     /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
@@ -128,20 +135,23 @@ let languages = {
 
 let githubInfo = {
     updateChecking: true,
+    /* if updateChecking is true, this file will be checked against the master on github on startup, 
+     * and you will receive an update message if the master has been updated. */
+     
+    /* Following is the information for where the master of this file is hosted on Github:  */
     username: "kupietools",
     reponame: "web-CLI-browser",
     branch: "master",
     filename: "cli.html"
 };
-/* if updateChecking is true, this is the information for where the master of this file is hosted on Github, against which the version history will be checked for changes on startup. */
-
-
 
 
 /* end user settings */
+
+
 </script>
 <meta prefix="og: http://ogp.me/ns#" property="og:title" content="CLI Browsing Console | Kupietz ARTS+CODE">
-<meta prefix="og: http://ogp.me/ns#" property="og:description" content="An advanced keyboard-controlled, commandline-based website front end. Just type your browsing command, no more tedious pointing and clicking!">
+<meta prefix="og: http://ogp.me/ns#" property="og:description" content="An advanced keyboard-controlled, command-line-based website front end. Just type your browsing command, no more tedious pointing and clicking!">
 <meta prefix="og: http://ogp.me/ns#" property="og:image" content="https://michaelkupietz.com/wp-content/uploads/2025/04/Screen-Shot-2025-04-20-at-6.07.59-PM.png">
 
 <link href="https://cdn.jsdelivr.net/npm/@icon/dashicons@0.9.0-alpha.4/dashicons.min.css" rel="stylesheet">
@@ -216,6 +226,8 @@ color:#964; /*#960;*/
 .text-detail {
     color: #cd9 /* #6c9 */; /* bright white */
 }
+
+.idSection {display:none; /* for now, just noting IDs in the code. May allow them to be shown later on by specifying an ID */ }
 
 .mmarker-child-a { color: #ffb; /*#ff5;*/}
 .screen-reader-text {display: none;}
@@ -846,6 +858,7 @@ async function fetchWithRetry(url) {
             }
             return new TextDecoder("utf-8").decode(chunksAll);
         } catch (err) {
+        console.log("Loading error, trying new proxy: ",err);
             lastError = err;
             loadingIndicator.textContent = `Loading ${url}... Retrying with different proxy (${err.message})`;
             continue;
@@ -889,6 +902,8 @@ function processNode(node, linkMap, indent = 0) {
         return '';
     }
 
+
+   if (node.getAttribute("id")) { content += '<span class="idSection">&lt;begin section '+node.getAttribute("id")+"&gt;</span>";}
 
 
     switch (tagName) {
@@ -1012,7 +1027,7 @@ function processNode(node, linkMap, indent = 0) {
         content += '</span>';
     }
     if (node.classList.contains('h6')) {
-        content += '\n' + (spacer);
+        content += '\n<!-- 1020 -->' + (spacer);
     }
 
     switch (tagName) {
@@ -1064,6 +1079,8 @@ function processNode(node, linkMap, indent = 0) {
                } ( */
             break;
     }
+   if (node.getAttribute("id")) { content += '</span>';}
+
 
     return content;
 }
@@ -1085,6 +1102,7 @@ async function processHTML(html, url) {
                     href: resolvedUrl
                 };
             } catch (e) {
+            console.log("processHTML err",e);
                 return null;
             }
         }
@@ -1112,12 +1130,13 @@ async function processHTML(html, url) {
 
     textContent = textContent
         .replace(/\n{3,}/mg, '\n\n')
-        .replace(/(\n[-<!0-9> ]*<span class="spacers">[ |]*<\/span>){3,}/igm, '$1$1')
+        .replace(/(\n[-<!0-9> ]*<span class="(spacers|idSection)">[ |]*<\/span>){3,}/igm, '$1$1')
         .replace(/[ \t]+/g, ' ')
         .trim();
 
     textContent += '\n\n' + '-'.repeat(40) + '\n';
-    textContent += `${links.length} links found. Use 'links' command to show them.\n`;
+    textContent += `${links.length} links found. Use '${cmdOut("links")}' command to show them.\n`;
+    textContent += imageArray.length>0?`${imageArray.length} images found. Use '${cmdOut("images")}' command to show them.\n`:'';
 
     return {
         content: textContent,
@@ -1248,13 +1267,13 @@ Loading and viewing web content:
 - ${cmdOut("links","",theLength)} : List all links in the loaded page
 - ${cmdOut("images","",theLength)} : List all image descriptions and URLs in the loaded page
 - ${cmdOut("image","imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
+- ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
 
 Navigating between web pages:
 - ${cmdOut("follow","linknumber",theLength)} : Follow a link in the current page by its number
 - ${cmdOut("back","",theLength)} : Go back to the previously loaded page
 - ${cmdOut("forward","",theLength)} : Go forward to the next page
 - ${cmdOut("reload","",theLength)} : Reload the currently loaded page
-- ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
 
 Controlling & filtering output:
 - commandname1 ${cmdOut("|","commandname2",theLength-13)} : Redirect output into another command such as 'grep' or 'more'
@@ -1608,6 +1627,7 @@ Administrator. It usually boils down to these three things:
                 const matches = lines.filter(line => regexp.test(line));
                 return matches.join('\n');
             } catch (e) {
+            console.log ("Invalid grep exp error", e);
                 return `Error: Invalid ${cmdOut("grep")} expression - ${e.message}`;
             }
         }
@@ -1693,6 +1713,7 @@ Administrator. It usually boils down to these three things:
             try {
                 new URL(url);
             } catch (e) {
+              console.log ("Invalid url formate error", e);
                 return 'Error: Invalid URL format';
             }
 
@@ -1718,6 +1739,7 @@ Administrator. It usually boils down to these three things:
                             });
                         }
                     } catch (err) {
+                      console.log ("failed to fetch error", err);
                         throw new Error(`Failed to fetch: ${err.message}`);
                     }
                 }
@@ -1735,11 +1757,12 @@ Administrator. It usually boils down to these three things:
 
                 updatePrompt();
                 if (content && !gotFromCache) {
-                    addOutput('<!-- span class="dashicons dashicons-admin-site" style="font-size:.7rem"> </span -->' + url + " loaded, " + content.length + " bytes received. Ready to " + cmdInLang("display"));
+                    addOutput('<!-- span class="dashicons dashicons-admin-site" style="font-size:.7rem"> </span -->' + url + " loaded, " + content.length + " bytes received. Type '" +  cmdOut("display")+"' to view.");
                 }
                 thisOutput = (addToHistory || reload) ? "" : ("\n" + (content || 'Error: No content processed')); /* don't show on load or reload; make them use Display. Should really have a separate parameter to pass explicitly telling it whether to display or not, but for now, it's ok to do it this way. */
                 return thisOutput;
             } catch (err) {
+              console.log ("Error Loading url, error: ", e);
                 currentUrl = '';
                 currentLinks = [];
                 updatePrompt();
@@ -2256,7 +2279,7 @@ async function checkForUpdates() {
             /*  document.getElementById('updateBanner').style.display = 'block'; */
             addOutput("\nThe version of this browser on Github is different from this local version. You may want to check the repo at " + `https://github.com/${githubInfo.username}/${githubInfo.reponame}/${githubInfo.filename}` + " and download the more recent version if necessary.\n");
         }
-    } catch (error) {
+    } catch (error) {  console.log ("Error checking for github update", e);
         if (githubInfo.updateChecking) {
             addOutput("There was an error checking for updates: " + error + "\n");
         }
