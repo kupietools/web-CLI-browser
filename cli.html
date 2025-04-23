@@ -83,6 +83,19 @@ let defaultOptions = {
     crt: "bw"
 };
 
+let githubInfo = {
+    updateChecking: true,
+    /* if updateChecking is true, this file will be checked against the master on github on startup, 
+     * and you will receive an update message if the master has been updated. */
+     
+    /* Following is the information for where the master of this file is hosted on Github:  */
+    username: "kupietools",
+    reponame: "web-CLI-browser",
+    branch: "master",
+    filename: "cli.html"
+};
+
+
 
 let languages = {
     /* here you can define new synonyms for default commands in the form new:default, to create other languages. */
@@ -131,20 +144,6 @@ let languages = {
     }
 
 };
-
-
-let githubInfo = {
-    updateChecking: true,
-    /* if updateChecking is true, this file will be checked against the master on github on startup, 
-     * and you will receive an update message if the master has been updated. */
-     
-    /* Following is the information for where the master of this file is hosted on Github:  */
-    username: "kupietools",
-    reponame: "web-CLI-browser",
-    branch: "master",
-    filename: "cli.html"
-};
-
 
 /* end user settings */
 
@@ -1285,7 +1284,7 @@ Controlling this terminal:
 - ${cmdOut("clear","",theLength)} : Clear the terminal output
 - ${cmdOut("options","[parameter [value]]",theLength)} : Manually read or change URL parameters (given below) from the command line. Omit value to display current value, omit both to see all current values
 - ${cmdOut("exit","",theLength)} : End session and return to GUI browing mode
-- ${cmdOut("versions","",theLength)} : Version history/changelog of this CLI browser
+- ${cmdOut("versions","",theLength)} : Version history/changelog and other developer info about this CLI browser
 - ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does.
 - ${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
 
