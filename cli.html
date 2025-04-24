@@ -121,7 +121,7 @@ let info={
 • Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
 • You can have this front end for your own website! Grab it at https://github.com/kupietools/web-CLI-browser. With the default settings, it will check Github for updates and prompt you to redownload if the app has been updated. 
 `,
-vrsions : `
+versions : `
 Version History:
 2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%
 2025apr22 - change page loaded message to suggest 'display' command more clearly
@@ -1318,7 +1318,7 @@ const commands = {
     info: {
         man: () => `USAGE: ${cmdOut("info")} [news|versions|bugs|todo]
         
-        This displays news, version history of this software, know bugs, or developer's to-do list. You may enter multiple options separated by a comma, or don't specify any option to display all.`,
+        This displays news, version history/changelog of this software, know bugs, or the developer's to-do list. You may enter multiple options separated by a comma, or don't specify any option to display all.`,
         do: (options) => {
         let theOptions = options?options.split(","):[];
         let index=0;
@@ -1368,7 +1368,7 @@ Controlling & filtering output:
 Controlling this terminal:
 - ${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
 - ${cmdOut("exit","",theLength)} : End session and return this browser window to GUI browing mode
-- ${cmdOut("info","",theLength)} : Display the version history/changelog, latest news, and other developer info about this CLI browser
+- ${cmdOut("info","[news|versions|bugs|todo]",theLength)} : Display the latest news, version history/changelog, known bugs, and the developer's to-do list.
 - ${cmdOut("clear","",theLength)} : Clear the terminal output
 - ${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
 - ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
