@@ -123,7 +123,7 @@ let info={
 `,
 versions : `
 Version History:
-2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%
+2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%, fix click listener so allows you to select text on page to copy abd refocus command input when click to deselect
 2025apr22 - change page loaded message to suggest 'display' command more clearly
 2025apr20 - Add social media browsing meta tags
 2025apr18 - Add hilite to url options and auto-uppercase default options in Help, fixed 'forceuppercase' option and celebrated by renaming it 'allcaps', broke up help for readability, fix so image list clears on new page load
@@ -465,9 +465,11 @@ document.getElementById("helplang").textContent = cmdInLang("help");
 
 
 const commandInput = document.getElementById('command-input');
-
-document.getElementById("terminal").addEventListener('click', function() {
-    commandInput.focus();
+document.getElementById("terminal").addEventListener('mouseup', function() {
+    console.log(window.getSelection().type);
+    if (window.getSelection().type != "Range") {
+        console.log("focusing");
+    commandInput.focus();}
 });
 
 /* begin code to handle moving cursor with mouseclicks */
