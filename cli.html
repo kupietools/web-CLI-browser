@@ -74,24 +74,30 @@ let languages = {
         "man": "help",
         "cd": "follow",
         "setopt": "options",
-        "bell":"beep"
+        "bell":"beep",
+    "nano":"source"
     },
     "basic": {
         "load": "load",
-        "print": "where",
+        "peek": "where",
         "cls": "clear",
         "run": "display",
         "gr": "images",
-        "list": "links",
+        "dir": "links",
         "goto": "follow",
         "poke": "options",
-        "restart": "reboot"
+        "restart": "reboot",
+    "hgr2":"image",
+"list":"source",
+    "sysinfo":"info",
+    "print":"echo"
     },
     "pig-latin": {
         "oadlay": "load",
         "ackbay": "back",
         "earclay": "clear",
         "imagesway": "images",
+    "imageway":"image",
         "optionsway": "options",
         "erewhay": "where",
         "isplayday": "display",
@@ -108,7 +114,9 @@ let languages = {
         "udosay": "sudo",
         "akesnay": "snake",
         "ebootray": "reboot",
-        "eepbay":"beep"
+        "eepbay":"beep",
+    "ourcesay":"source",
+    "echoway":"echo"
 
     }
 
@@ -123,6 +131,7 @@ let info={
 `,
 versions : `
 Version History:
+2025apr29 - add 'source' and 'echo' commands, revamp 'more' to handle them correctly, get rid of ever using innertext instead of innerhtml in addOutput
 2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%, fix click listener so allows you to select text on page to copy abd refocus command input when click to deselect
 2025apr22 - change page loaded message to suggest 'display' command more clearly
 2025apr20 - Add social media browsing meta tags
@@ -240,8 +249,8 @@ color:#964; /*#960;*/
 }
 
 .idSection {display:none; /* for now, just noting IDs in the code. May allow them to be shown later on by specifying an ID */ }
-
-.mmarker-child-a { color: #ffb; /*#ff5;*/}
+.mmarker-child-a ~ .dashicons {color:  color: #ffb;}
+.mmarker-child-a { color: #ffb; /*#ff5;*/ margin-inline: 6px;}
 .screen-reader-text {display: none;}
 
 .h6, .titleprefix {
@@ -257,22 +266,25 @@ font-variant: small-caps;
 }
 .h6:after {content:": ";}
 
-.meta-genre-term {font-size: .6875em;   color:#ccf; /*#99F;*/
+.meta-genre-term {/font-size: .6875em;   color:#ccf; /*#99F;*/
 
 
-display: inline-block !important;
+/* display: inline-block !important; nah, don't think I need it*/
 
 	padding: 2px 3px !important;
 	line-height: 0.75em;
-	border: 1px solid #33c6ff !important;
+	/* border: 1px solid #33c6ff !important; */
 	/* background: #ccc /~ #33c6ff ~/ !important; */
-	width: auto;
+	width: auto; /* won't actually work now that I've disabled inline-block display */
 	font-weight: 400 !important;
 border-radius:3px;
-margin-inline:1px;
+/* margin-inline:2px; */
 
 
 }
+
+.meta-genre-term:before {content:'[';}
+.meta-genre-term:after {content:']';}
 .titleprefix {/* color:#FFC; */text-transform: capitalize;}
 .titleprefix:after {content:': ';}
 
@@ -413,7 +425,7 @@ async function checkForUpdates() {
 }
 
 checkForUpdates();
-
+var source = "";
    var audio = new Audio("data:audio/mpeg;base64,SUQzAwAAAAAAcFRTU0UAAAAvAAAATEFNRSA2NGJpdHMgdmVyc2lvbiAzLjEwMCAoaHR0cDovL2xhbWUuc2YubmV0KVRJVDIAAAAfAAAB//5BAHAAcABsAGUAIABJAEkAYwAgAEIAZQBlAHAAVExFTgAAAAQAAAAxMDT/84jEAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGVAA3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnn5+fn5+fn5+fn5+fn5+fn5+fn5/k5OTk5OTk5OTk5OTk5OTk5OTk5P////////////////////////8AAABdTEFNRTMuMTAwBFAAAAAALCoAABUIJAJ4QAAB9AAABlQnZhRdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/84jEAA3JlsG/QRAAhDEAW3RsfgPv/AD439TnOd0Oc5zn/IQn/2Od/2////U4gjv/lwfD///qBAMQQDH////LxGfUCCoATOfjMAEmalEAOkMFDWUlDSsL8IbiDd4cjTRZZGGYwTD0dYa47hcwr4jAaKY0BlBQoDg2AUUhCImgIA0DFACF+WwMHD4DdA/BoC3H5ZiTJESZdSyBEVKtEpDnFZSnNDMqOsnSJlEnDVA3Y8iowSZFTqPoL6STsTIvQCQSQUuGpdMTJMpA2MjDKuksoBgkB5qEIDMqsyzYvUjJE1RotLSSntUrXV/1nVnBfBdY6iikkkupa2Og0AQgqZH1dXy6CYOAsWywfX/RRSSXSSWojAwIoomSSS+tvUgeHWH/83jE2zqj/p5dmqgEYeO1BFvmT/SLw+ARB0ZJKgAuv+8AJtrqANsAAAB5yAgCL2lYoDsLL0DnCXipYHAda6x1Lm5Rx753CeLnXskGKWH0BJgACoXVg11UFEwwEAYx3FE9XLgw1GYQg0FGZMcEuDhSGgzdyYtXkpnbpZ/hMJjV7Eg0pw+sflkkoIsueMRnenEhq3Yw5DOo1ZeKlkPYzS8xjTRrckfh5HTrQWo8YEgmZUmOYxAKwaioMuozmDIJGTh5mI4AqaWbPPcEFCyYmL4YDgMyG5f/2EyHX0ufMtZVIrT2f+tj//+Vvf4fh+8+f18eWZMYAgKGOMgxSf//84jE30ysBl4/nOgA////vJsgVGcyDCBrzmZ6////p6jLiAdTEAGnHU997////31s///UstkBQEmIo0OLL////9vta///LfQgHgQRNyt////7+4///+qUeBQwuIaLUdTlAAMzkjiQAAntIQAZgDKQ+aP2NpL3mJA6eUndZp7OgUMFQEa+u9Xqux0DVisM3FgSwe8tpCIvwAgOzowUBzpQNGAuWlMGHwyUa0e02x0SGMQUXalOt2/WtQwXF7RdlW5rTkuO5tSKSyWfCWb0jNWXw4s9HxCWmSnc5v63/MaXKkwp43Pyt5Xva5EH3mnKiT4mQwWLDVvqfv5xIIAxho5pJy6KS+5Rv7mIQAiU6kml8orbz/88MMP/90OVTG3OVJz/85jEv0ssBpr/m+Eh5nnm2GtI3sh+hmpbLbessKkuQZKEo4PMef///178TFAUCjzD8Xx5//n39YM5C4AIQDI45ds953C/v6bL///7cZWYjC72yDP///+M3cvv87QwMkoY8AKfUdl1nf/+VS9bqVqt+enG7onPPYuZ7Rp4gCOKOfXHAIBBVkUSiU0SJJbJEjUo41OaRcRDpUMoiHXKHSiqGcr6GqIh1ylaZ1LKUpWMYWZDZZjMhhY0pRU2hjOpTGNKVBIPMYPGq3QxjVKV1L9eXiQeKhjZS/zGMUpSlLWUOh0OirGMYs3/+v8xqG/5jVKV1LMZQFAEWUOhoRf8S0xBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80jE7SC7to0fxigAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=");
 audio.controls = true;
 audio.style.display="none";
@@ -641,12 +653,14 @@ function toggleInputLine(show) {
 function addOutput(text, className = 'output') {
     const output = document.createElement('div');
     output.className = className;
-    if (typeof text === 'string' && !text.includes('</')) {
+  /* DON'T KNOW WHAT PURPOSE THIS SERVED  if ( typeof text === 'string' && !text.includes('</') ) {
+ 
         output.textContent = text;
-    } else {
+    } else { */
+   
         output.innerHTML = text;
 
-    }
+  /*  } */
     terminal.insertBefore(output, input.parentElement);
     terminal.scrollTop = terminal.scrollHeight;
     return output;
@@ -677,7 +691,8 @@ function displaySignal(signal) {
 
 
 function createMoreHandler(fullText) {
-    const dims = getTerminalDimensions();
+    var dims = getTerminalDimensions();
+dims.width = .99 * dims.width; /* wasn't getting it quite right, lines too long */
 
     // Split into lines while preserving HTML tags
     const lines = [];
@@ -728,34 +743,61 @@ function createMoreHandler(fullText) {
 
     let position = 0;
 
-    function displayMore() {
-        if (position >= lines.length) {
-            currentMoreOutput = null;
-            removeMorePrompt();
-            toggleInputLine(true);
-            return null;
-        }
-
-        const endPosition = Math.min(position + dims.height - 1, lines.length);
-        const output = lines.slice(position, endPosition).join('\n');
-
-        position = endPosition;
-
-        const percentage = Math.floor((position / lines.length) * 100);
-        const lineInfo = `lines ${position}/${lines.length}`;
-
-        addOutput(output);
-
-        if (position < lines.length) {
-            showMorePrompt(`--Press Space For More--${lineInfo} (${percentage}%)`);
-            return '';
-        }
-
+function displayMore() {
+    if (position >= lines.length) {
+        currentMoreOutput = null;
         removeMorePrompt();
         toggleInputLine(true);
         return null;
     }
 
+    let output = '';
+    let displayedLines = 0;
+
+    while (position < lines.length && displayedLines < dims.height - 1) {
+        const line = lines[position];
+        let startPos = 0;
+        let visibleCount = 0;
+        
+        while (startPos < line.length && displayedLines < dims.height - 1) {
+            let chunkEnd = startPos;
+            visibleCount = 0;
+            
+            while (chunkEnd < line.length && visibleCount < dims.width) {
+                if (line[chunkEnd] === '<' && line.indexOf('>', chunkEnd) > chunkEnd && /^<\/?[a-zA-Z][^>]*>/.test(line.slice(chunkEnd))) {
+                    // It's a real HTML tag - skip to end
+                    const tagEnd = line.indexOf('>', chunkEnd);
+                    chunkEnd = tagEnd + 1;
+                } else {
+                    // Regular character
+                    visibleCount++;
+                    chunkEnd++;
+                }
+            }
+            
+            const chunk = line.slice(startPos, chunkEnd);
+            output += chunk + '\n';
+            displayedLines++;
+            startPos = chunkEnd;
+        }
+        
+        position++;
+    }
+
+    const percentage = Math.floor((position / lines.length) * 100);
+    const lineInfo = `lines ${position}/${lines.length}`;
+
+    addOutput(output.trimEnd());
+
+    if (position < lines.length) {
+        showMorePrompt(`--Press Space For More--${lineInfo} (${percentage}%)`);
+        return '';
+    }
+
+    removeMorePrompt();
+    toggleInputLine(true);
+    return null;
+}
     return {
         next: displayMore,
         cancel: () => {
@@ -1354,6 +1396,7 @@ Loading and viewing web content:
 - ${cmdOut("images","",theLength)} : List all image descriptions and URLs in the loaded page
 - ${cmdOut("image","imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
 - ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
+- ${cmdOut("source","",theLength)} : Display the source HTML code of the currently loaded page
 
 Navigating between web pages:
 - ${cmdOut("follow","linknumber",theLength)} : Follow a link in the current page by its number
@@ -1375,7 +1418,8 @@ Controlling this terminal:
 - ${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
 - ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
 - ${cmdOut("beep","",theLength)} : Plays the system bell (ctrl-G)
-- ${cmdOut("options","[parameter] [value]",theLength)} : Manually change URL parameters (given below) from the command line, or display current value(s). Enter a parameter and value to set that parameter, enter just a parameter to display its current value, or leave both out to list all current parameter values
+- ${cmdOut("echo","[string]",theLength)} : Simply outputs string to ${theseOptions["language"]=="unix"?"STDOUT":"the screen"}
+- ${cmdOut("options","[parameter] [value]",theLength)} : Manually set URL parameters (given below) from the command line, or display current value(s). Leave oit a value to display paramaters current value, or leave out both to list.
 
 Optional startup URL paramaters (starred value is the default if unspecified):
 - ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
@@ -1394,12 +1438,20 @@ Optional startup URL paramaters (starred value is the default if unspecified):
             }
         }
     },
-    beep: {man: () => `Plays the system bell (ctrl-G).`,
+source: {man: () => `USAGE: ${cmdOut("source")}
+
+Shows currently loaded page source.`,
+    do: () => {return source; /* this is a special case since outputting HTM */}},
+    beep: {man: () => `USAGE: ${cmdOut("beep")}
+
+Plays the system bell (ctrl-G).`,
     do: () => {
         doBeep();
     }},
     /* extra verbiage: Execute a command with elevated privileges */
-    reboot: { man: ()=> `Reboot the terminal with its original startup options.`, do: ()=> {addOutput ("Rebooting...");
+    reboot: { man: ()=> `USAGE: ${cmdOut("reboot")}
+    
+    Reboot the terminal with its original startup options.`, do: ()=> {addOutput ("Rebooting...");
     window.location.reload();
     }},
     options: {
@@ -1445,6 +1497,12 @@ Optional startup URL paramaters (starred value is the default if unspecified):
 
         }
     },
+    echo: {
+        man: () => `USAGE: ${cmdOut("echo")}
+        
+        Simply outputs whatever it is followed by back to the screen.`,
+        do: (...args) => args.join(" ")
+    },
 
     where: {
         man: () => `USAGE: ${cmdOut("where")}
@@ -1465,7 +1523,12 @@ Optional startup URL paramaters (starred value is the default if unspecified):
                 "Yes, Virginia, there is a Commodore 64 screen setting.",
                 "We can't play snakes & ladders, because we have no ladders.",
                 "The mercy of the software engineer is bountiful. You shouldn't need a password for a sandwich.",
-                "Ask not for whom the terminal bell tolls. It tolls for G."
+                "Ask not for whom the terminal bell tolls. It tolls for G.",
+                "Homo eruditus Latine loquitur.",
+                "This even works on September 19.",
+                "Who speaks short-shorts? I speak short-shorts!",
+                "I'd show you all the bells and whistles, but I have no whistles.",
+                "Is there an echo in here, or is it just me? Yes—there's an echo."
             ];
 
             index = Math.floor(Math.random() * hints.length);
@@ -1827,6 +1890,17 @@ Administrator. It usually boils down to these three things:
                     try {
 
                         const html = await fetchWithRetry(url);
+                    
+                    var mapObj = {
+   "&":"&amp;",
+   "<":"&lt;",
+   ">":"&gt;"
+};
+source = html.replace(/<|>|\&/gi, function(matched){
+  return mapObj[matched];
+});
+                   
+                
                         const result = await processHTML(html, url);
                         content = result.content;
                         links = result.links;
@@ -1872,6 +1946,27 @@ Administrator. It usually boils down to these three things:
 
 /**** end of commands definition ***/
 
+    
+   function prettyformat(html) {
+    var tab = '    ';
+    var result = '';
+    var indent= '';
+
+    html.split(/>\s*</).forEach(function(element) {
+        if (element.match( /^\/\w/ )) {
+            indent = indent.substring(tab.length);
+        }
+
+        result += indent + '<' + element + '>\r\n';
+
+        if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) { 
+            indent += tab;              
+        }
+    });
+
+    return result.substring(1, result.length-3);
+} 
+    
 async function canPlayAudio() {
             try {
                 // Try to play and immediately pause
@@ -2113,7 +2208,9 @@ function addDicts() /* yep, I hid more down here */ {
             "noticia": "info",
             "ubi": "where",
             "sileo": "reboot",
-            "tinniant":"beep"
+            "tinniant":"beep",
+        "fontem":"source",
+        "repetere":"echo"
         },
         "short": {
             "<": "back",
@@ -2136,6 +2233,8 @@ function addDicts() /* yep, I hid more down here */ {
             "@": "where",
             "<": "reboot",
             "\\": "beep",
+        ":":"source",
+        "\"":"echo"
         },
         "pirate": {
             "astern": "back",
@@ -2153,11 +2252,13 @@ function addDicts() /* yep, I hid more down here */ {
             "booty": "links",
             "spyglass": "more",
             "armaments": "options",
-            "arrrr": "reload",
+            "landho": "reload",
             "manifest": "info",
             "ahoy": "where",
             "mutiny": "reboot",
-            "ahoy": "beep"
+            "arrr": "beep",
+        "treasuremap":"source",
+        "fire":"echo"
         }
     };
     return result;
