@@ -127,10 +127,12 @@ let languages = {
 let info={
     news:`News:
 • Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
+• The "image" and "follow" commands have been deprecated as of May '25 and folded into the '${cmdOut("images")}' and '${cmdOut("links")}' commands. See '${cmdOut("help")}'.
 • You can have this front end for your own website! Grab it at https://github.com/kupietools/web-CLI-browser. With the default settings, it will check Github for updates and prompt you to redownload if the app has been updated. 
 `,
 versions : `
 Version History:
+2025apr30 - deprecate "image" and "follow" commands, remove from help, and set up '${cmdOut("images")} imagenumber' and '${cmdOut("links")} linknumber' instead.
 2025apr29 - add 'source' and 'echo' commands, revamp 'more' to handle them correctly, get rid of ever using innertext instead of innerhtml in addOutput
 2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%, fix click listener so allows you to select text on page to copy abd refocus command input when click to deselect
 2025apr22 - change page loaded message to suggest 'display' command more clearly
@@ -148,9 +150,8 @@ Version History:
 `,
 
 bugs:`Known bugs:
-1.) if you scroll back the history and enter a new comment, history index doesn't reset to the end.
-2.) Doesn't clear the image array if you explicitly load a new page
-3.) Some options don't throw errors if you give them bad values, they're just ignored.
+1.) if you scroll back the history and enter a new command, history index doesn't reset to the end.
+2.) Some options don't throw errors if you give them bad values, they're just ignored.
 `,
 
 todo:`To Dos:
@@ -187,6 +188,7 @@ todo:`To Dos:
     padding: 20px;
     height: 100vh;
     overflow: hidden;
+
       /* had these, but needs more work... text input color & sizew didn't match
         font-size:14px;
         font-family: "Chivo Mono", monospace,"VT323";
@@ -385,7 +387,7 @@ border-radius:3px;
     </style>
 </head>
 <body><div id="terminal"><div class="output">&nbsp;<br>*** KUPIETZ ARTS+CODE ***<p>&nbsp;&nbsp;&nbsp;&nbsp;7167 BYTES FREE<p>
-Welcome to CLI browsing mode.<br>Type '<span id="helplang" class="prevcommand">help</span>' for available commands.</div><div id="input-line" class="">
+Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">help</span>' for available commands.</div><div id="input-line" class="">
     <span id="prompt">$ </span>
     <div id="command-input" contenteditable="true" autofocus=""></div>
 </div>
@@ -1383,7 +1385,9 @@ const commands = {
     },
 
     help: {
-        man: () => `Unfortunately the ${cmdInLang("help")} page for '${cmdOut("help")}' has been recalled by the Department Of Redundancy Department.`,
+        man: () => `Unfortunately the ${cmdInLang("help")} page for '${cmdOut("help")}' has been recalled by the Department Of Redundancy Department.
+        
+        Try just typing '${cmdOut("help")}'.`,
         do: (command = "") => {
             if (command == "") {
                 theLength = 30;
@@ -1392,14 +1396,12 @@ Available ${theseOptions["language"]} commands. Use '${cmdOut("help")} commandna
 
 Loading and viewing web content: 
 - ${cmdOut("display","",theLength)} : Display the currently loaded page
-- ${cmdOut("links","",theLength)} : List all links in the loaded page
-- ${cmdOut("images","",theLength)} : List all image descriptions and URLs in the loaded page
-- ${cmdOut("image","imagenumber",theLength)} : Display an ascii-converted image by image number, in blocks or ascii
+- ${cmdOut("images","[[--ascii-art, -a] imagenumber]",theLength)} : Show a numbered list of all images in the loaded page, or show a single image by its imagenumber
 - ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
 - ${cmdOut("source","",theLength)} : Display the source HTML code of the currently loaded page
 
 Navigating between web pages:
-- ${cmdOut("follow","linknumber",theLength)} : Follow a link in the current page by its number
+- ${cmdOut("links","[linknumber]",theLength)} : Show a numbered list of all links in the loaded page, or load a linked page by its linknumber
 - ${cmdOut("back","",theLength)} : Go back to the previously loaded page
 - ${cmdOut("forward","",theLength)} : Go forward to the next page
 - ${cmdOut("reload","",theLength)} : Reload the currently loaded page
@@ -1418,8 +1420,7 @@ Controlling this terminal:
 - ${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
 - ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
 - ${cmdOut("beep","",theLength)} : Plays the system bell (ctrl-G)
-- ${cmdOut("echo","[string]",theLength)} : Simply outputs string to ${theseOptions["language"]=="unix"?"STDOUT":"the screen"}
-- ${cmdOut("options","[parameter] [value]",theLength)} : Manually set URL parameters (given below) from the command line, or display current value(s). Leave oit a value to display paramaters current value, or leave out both to list.
+- ${cmdOut("options","[parameter [value]]",theLength)} : Manually set URL parameters (given below) from the command line. Type "${cmdOut("help")} ${cmdOut("options")}" for details. 
 
 Optional startup URL paramaters (starred value is the default if unspecified):
 - ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
@@ -1599,7 +1600,9 @@ Plays the system bell (ctrl-G).`,
     },
 
     image: {
-        man: () => `USAGE: ${cmdOut("image")} [imagenumber]
+        man: () => `USAGE: ${cmdOut("image")} [--ascii-art, -a] [imagenumber]
+        
+            DEPRECATED. Use ${cmdOut("images")} [--ascii-art, -a] [imagenumber] instead.
 
             Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the '${cmdOut("images")}' command.`,
 
@@ -1694,16 +1697,110 @@ Plays the system bell (ctrl-G).`,
 
 
     images: {
-        man: () => `USAGE: ${cmdOut("images")}
+        man: () => `USAGE: ${cmdOut("images")} [--ascii-art, -a] [imagenumber] instead.
+
+             If no flag or imagenumber specified, returns a numbered list of the images in the currently loaded document, with alt text, URLs, and dimensions. If an imagenumber is specified, displays (a representation of) the image numbered with imagenumber in the currently loaded page.`,
+
  
-        Returns a numbered list of the images in the currently loaded dcument, with alt text, URLs, and dimensions.`,
-        do: () => {
+        do: (param1="",param2="") => {
+        if( param1=="" && param2 =="") {
             let outImages = "";
             for (const imNum in imageArray) {
 
                 outImages += `<span class="text-link">[${imNum}]</span> ${imageArray[imNum]["alt"]?imageArray[imNum]["alt"]+" ":""}<span class="text-img">${imageArray[imNum]["url"]}${imageArray[imNum]["dim"]?' '+imageArray[imNum]["dim"]:''}</span>\n`;
             }
-            return outImages;;
+            return outImages;}
+
+else
+
+ {
+
+            num = isNaN(param1) ? param2 : param1;
+            ascii = isNaN(param1) ? (param1 == "-a" || param1 == "--ascii-art") : param2;
+            if (isNaN(param1) && !["-a", "--ascii-art"].includes(param1)) {
+                return "unrecognized option: " + param1;
+            }
+            if (imageArray[num] && imageArray[num]["url"]) {
+                imageUrl = imageArray[num]["url"];
+            } else {
+                return "Invalid image number: " + num;
+            }
+
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scale = Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight);
+                    /* scale if image > 98% of window in either dimension */
+
+                    const blockWidth = chWidth * Math.max(scale, 1);
+                    const blockHeight = chWidth * 2 * Math.max(scale, 1);
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    /* remember if the console is open, it will scale if the vertical direction is bigger than the remaining available window height */
+
+                    const blocksAcross = Math.floor(img.width / blockWidth);
+                    const blocksDown = Math.floor(img.height / blockHeight);
+
+                    // ASCII chars from darkest to brightest
+                    const asciiChars = ' .`\'",-:;~>+!?░@l#$&▒§¶MWB▓█';
+                    /* alternative character sets: note, some incompatible with all caps display
+                     Original :".-░*%#@$&▒§¶▓█';
+                    " .'`^\",_-:;~>+!/?1}(|l[irxczb%khmwqpdXQ0OZ#MWB@";
+                    " .'`^\",_-:;~><+?][}1(|/Il!itfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@"; */
+                    let result = '';
+
+                    for (let y = 0; y < blocksDown; y++) {
+                        for (let x = 0; x < blocksAcross; x++) {
+                            const data = ctx.getImageData(x * blockWidth, y * blockHeight, blockWidth, blockHeight).data;
+
+                            let r = 0,
+                                g = 0,
+                                b = 0;
+                            for (let i = 0; i < data.length; i += 4) {
+                                r += data[i];
+                                g += data[i + 1];
+                                b += data[i + 2];
+                            }
+
+                            const pixelCount = (blockWidth * blockHeight);
+                            r = Math.floor(r / pixelCount);
+                            g = Math.floor(g / pixelCount);
+                            b = Math.floor(b / pixelCount);
+                            const asciiMax = 200 / Math.max(r, g, b) //upscale displayed color brightness a bit for ascii
+                            let ra = Math.floor(r * asciiMax);
+                            let ga = Math.floor(g * asciiMax);
+                            let ba = Math.floor(b * asciiMax);
+
+                            // Calculate brightness (0-255)
+                            const brightness = (r + g + b) / 3; //upscale brightness:  Math.min((r + g + b) / 3,255); 
+
+                            // Map brightness to ASCII character
+                            const charIndex = Math.floor(brightness / 255 * (asciiChars.length - 1));
+                            const char = asciiChars[charIndex];
+
+                            // Add colored character
+                            result += ascii ? `<span class="termImgAscii" ${ascii?`style="color: rgb(${ra},${ga},${ba})"`:`style="color: rgb(${r},${g},${b})"`}>${char}</span>` : `<span class="termImg" style="color: rgb(${r},${g},${b})">█</span>`;
+                        }
+                        result += '<br>';
+                    }
+                    result = `<div class="cliImgOut${ascii?'Ascii':''}">${result}${scale>1?"[Scaled "+Math.floor(100*(1/scale))+"%]":""}</div>`
+                    resolve(result);
+                };
+
+                img.onerror = reject;
+                img.src = imageUrl;
+            });
+
+        }
+
+
+
+
         }
     },
 
@@ -1807,21 +1904,38 @@ Administrator. It usually boils down to these three things:
 
 
     links: {
-        man: () => `USAGE: ${cmdOut("links")}
+        man: () => `USAGE: ${cmdOut("links")} [linknumber].
             
-        Returns a numbered list of the links in the currently loaded dcument.`,
-        do: () => {
+            If no linknumber is specified, returns a numbered list of the links in the currently loaded document. If a linknumber is present, loads the page indicated linked to by that linknumber.`,
+        do: (num="") => {
             if (!currentLinks || currentLinks.length === 0) {
                 return 'No links available. Load a page first using the Load command.';
             }
+
+if (num == "") {
             return currentLinks.map((link, i) =>
                 `<span class="text-link">[${i + 1}]</span> <span class="text-anchor">${link.text}</span> -> ${link.href}</a>`
-            ).join('\n');
+            ).join('\n');} else
+
+            {
+            if (!currentLinks || currentLinks.length === 0) {
+                return 'No links available. Load a page first that contains links.';
+            }
+            const index = parseInt(num) - 1;
+            if (isNaN(index) || index < 0 || index >= currentLinks.length) {
+                return 'Invalid link number. Use the links command to see available links.';
+            }
+            return doCommand("load")(currentLinks[index].href);
+
+            
+            }
         }
     },
 
     follow: {
         man: () => `USAGE: ${cmdOut("follow")} [linknumber]
+            
+            DEPRECATED. Use ${cmdOut("links")} [linknumber] instead.
             
             Loads the page indicated by linknumber, the number of a link in the currently loaded page. To see these numbers, use the '${cmdOut("links")}' command.`,
         do: async (num) => {
