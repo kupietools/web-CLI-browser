@@ -125,13 +125,14 @@ let languages = {
 /* end user settings */
 
 let info={
-    news:`News:
+    news:()=>`News:
 • Mike is looking for work. You could have the creativity and talent that spends its spare time doing things like this working for you. Email inquiries@kupietz.com or call 415-545-8743. Resume: https://www.kupietz.com. 
 • The "image" and "follow" commands have been deprecated as of May '25 and folded into the '${cmdOut("images")}' and '${cmdOut("links")}' commands. See '${cmdOut("help")}'.
 • You can have this front end for your own website! Grab it at https://github.com/kupietools/web-CLI-browser. With the default settings, it will check Github for updates and prompt you to redownload if the app has been updated. 
 `,
-versions : `
+versions:()=> `
 Version History:
+2025may17 - add viewport meta tag to fix iOS sizing stupidity, hide '0' child div created by chToPixels, added scrollTo after first initialize to fix iOS scrolling stupidity, change info blocks to ()=> functions so can use cmdOut function defined later
 2025apr30 - deprecate "image" and "follow" commands, remove from help, and set up '${cmdOut("images")} imagenumber' and '${cmdOut("links")} linknumber' instead.
 2025apr29 - add 'source' and 'echo' commands, revamp 'more' to handle them correctly, get rid of ever using innertext instead of innerhtml in addOutput
 2025apr23 - rename 'versions' to 'info' and allow parameters to display specific sections, update version checking to work with this, add reboot command, increase beeposity by 100%, fix click listener so allows you to select text on page to copy abd refocus command input when click to deselect
@@ -149,12 +150,12 @@ Version History:
 2025apr8 - first working version
 `,
 
-bugs:`Known bugs:
+bugs:()=>`Known bugs:
 1.) if you scroll back the history and enter a new command, history index doesn't reset to the end.
 2.) Some options don't throw errors if you give them bad values, they're just ignored.
 `,
 
-todo:`To Dos:
+todo:()=>`To Dos:
 1.) add -i flag to make image list show images. 
 2.) Need to test if noscript is handled correctly now
 3.) add scale command to scale output
@@ -171,6 +172,7 @@ todo:`To Dos:
 
 
 </script>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta prefix="og: http://ogp.me/ns#" property="og:title" content="CLI Browsing Console | Kupietz ARTS+CODE">
 <meta prefix="og: http://ogp.me/ns#" property="og:description" content="An advanced keyboard-controlled, command-line-based website front end. Just type your browsing command, no more tedious pointing and clicking!">
 <meta prefix="og: http://ogp.me/ns#" property="og:image" content="https://michaelkupietz.com/wp-content/uploads/2025/04/Screen-Shot-2025-04-20-at-6.07.59-PM.png">
@@ -188,6 +190,7 @@ todo:`To Dos:
     padding: 20px;
     height: 100vh;
     overflow: hidden;
+
 
       /* had these, but needs more work... text input color & sizew didn't match
         font-size:14px;
@@ -268,7 +271,7 @@ font-variant: small-caps;
 }
 .h6:after {content:": ";}
 
-.meta-genre-term {/font-size: .6875em;   color:#ccf; /*#99F;*/
+.meta-genre-term {/*font-size: .6875em; */  color:#ccf; /*#99F;*/
 
 
 /* display: inline-block !important; nah, don't think I need it*/
@@ -587,11 +590,11 @@ function chToPixels() {
     temp.style.font = window.getComputedStyle(document.getElementsByTagName("body")[0]).font;
     temp.style.fontSize = window.getComputedStyle(document.getElementsByTagName("body")[0]).fontSize;
     temp.style.position = 'absolute';
-    // temp.style.visibility = 'hidden';
+    temp.style.visibility = 'hidden';
     temp.textContent = '0';
     document.body.appendChild(temp);
     const zeroWidth = temp.offsetWidth;
-    //  document.body.removeChild(temp);
+    document.body.removeChild(temp);
 
     return zeroWidth;
 }
@@ -1378,7 +1381,7 @@ const commands = {
         
         let output="";
         for (const outOpt of theOptions) {
-        output += (outOpt==theOptions[0]?"":"\n")+info[outOpt];
+        output += (outOpt==theOptions[0]?"":"\n")+info[outOpt]();
         }
         return output;
         }
@@ -1407,9 +1410,8 @@ Navigating between web pages:
 - ${cmdOut("reload","",theLength)} : Reload the currently loaded page
 
 Controlling & filtering output:
-- commandname1 ${cmdOut("|","commandname2",theLength-13)} : Redirect the output of commandname1 through a second command, such as 'grep' or 'more', before displaying it
-- ${cmdOut("more","",theLength)} : Use after pipe (${cmdOut("|")}) to paginate output of previous command. [space] to continue. Esc, ctrl-c, or q to quit
-- ${cmdOut("grep","filterexpression",theLength)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
+- commandname | ${cmdOut("more","",theLength-14)} : Use after pipe (${cmdOut("|")}) to paginate output of previous command. [space] to continue. Esc, ctrl-c, or q to quit
+- commandname | ${cmdOut("grep","filterexpression",theLength-14)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
 - commandname ${cmdOut(">",'filename.html',theLength-12)} : Output commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
 Controlling this terminal:
@@ -2610,7 +2612,12 @@ function doCommand(command) {
 
 
 initialize();
-    
+    window.scrollTo({
+  top: 0,
+  left: 0,
+  behavior: 'smooth'
+});
+
   
 
 // Check for updates every hour
