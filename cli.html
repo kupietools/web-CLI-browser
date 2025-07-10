@@ -132,6 +132,8 @@ let info={
 `,
 versions:()=> `
 Version History:
+2025jul10 - visual stuff: reformatted some help, added 'exit' message to startup message and "display | more" to load message.
+2025jun27 - added a way to view all hints
 2025may17 - add viewport meta tag to fix iOS sizing stupidity, hide '0' child div created by chToPixels, added scrollTo after first initialize to fix iOS scrolling stupidity, change info blocks to ()=> functions so can use cmdOut function defined later
 2025apr30 - deprecate "image" and "follow" commands, remove from help, and set up '${cmdOut("images")} imagenumber' and '${cmdOut("links")} linknumber' instead.
 2025apr29 - add 'source' and 'echo' commands, revamp 'more' to handle them correctly, get rid of ever using innertext instead of innerhtml in addOutput
@@ -167,6 +169,8 @@ todo:()=>`To Dos:
 9.) Allow choosing ascii set for ascii art? Maybe even custom set from user?
 10.) Maybe a parameter to start it with an initial command, and/or without loading a page?
 11.) Maybe add a 'reset' command to re-run the initialization. 
+12.) Breaks totally if given a bad language name. Fix that, check how it handles other wrong options. 
+13.) Create "help -l [language]" flag to allow viewing help for languages besides the current.  
 `
 };
 
@@ -390,7 +394,7 @@ border-radius:3px;
     </style>
 </head>
 <body><div id="terminal"><div class="output">&nbsp;<br>*** KUPIETZ ARTS+CODE ***<p>&nbsp;&nbsp;&nbsp;&nbsp;7167 BYTES FREE<p>
-Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">help</span>' for available commands.</div><div id="input-line" class="">
+Welcome to CLI browsing mode.<p>Type '<span id="helplang" class="prevcommand">help</span>' for available commands, or '<span id="exitlang" class="prevcommand">exit</span>' to return to GUI browsing.</div><div id="input-line" class="">
     <span id="prompt">$ </span>
     <div id="command-input" contenteditable="true" autofocus=""></div>
 </div>
@@ -478,6 +482,7 @@ for (const language in languages) {
     }
 }
 document.getElementById("helplang").textContent = cmdInLang("help");
+document.getElementById("exitlang").textContent = cmdInLang("exit");
 
 
 
@@ -1395,41 +1400,39 @@ const commands = {
             if (command == "") {
                 theLength = 30;
                 return `
-Available ${theseOptions["language"]} commands. Use '${cmdOut("help")} commandname' to see more detailed info on a command:
+Available ${theseOptions["language"]} commands. Options in [brackets] are optional. Use '${cmdOut("help")} commandname' to see more detailed info on a command:
 
-Loading and viewing web content: 
-- ${cmdOut("display","",theLength)} : Display the currently loaded page
-- ${cmdOut("images","[[--ascii-art, -a] imagenumber]",theLength)} : Show a numbered list of all images in the loaded page, or show a single image by its imagenumber
-- ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
-- ${cmdOut("source","",theLength)} : Display the source HTML code of the currently loaded page
+*** ${hiliteOut("Loading and viewing web pages")} ***
+${cmdOut("display","",theLength)} : Display the currently loaded page
+${cmdOut("images","[[-a, --ascii-art] imagenumber]",theLength)} : Show a numbered list of all images in the currently loaded page, or include number to show a single image by its imagenumber. Optional -a flag displays output in ASCII-art mode.
+${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
+${cmdOut("source","",theLength)} : Display the source HTML code of the currently loaded page
 
-Navigating between web pages:
-- ${cmdOut("links","[linknumber]",theLength)} : Show a numbered list of all links in the loaded page, or load a linked page by its linknumber
-- ${cmdOut("back","",theLength)} : Go back to the previously loaded page
-- ${cmdOut("forward","",theLength)} : Go forward to the next page
-- ${cmdOut("reload","",theLength)} : Reload the currently loaded page
+*** ${hiliteOut("Navigating between web pages")} ***
+${cmdOut("links","[linknumber]",theLength)} : Show a numbered list of all links in the currently loaded page, or include a number to load a linked page by its linknumber
+${cmdOut("back","",theLength)} : Go back to the previously loaded page
+${cmdOut("forward","",theLength)} : Go forward to the next page
+${cmdOut("reload","",theLength)} : Reload the currently loaded page
 
-Controlling & filtering output:
-- commandname | ${cmdOut("more","",theLength-14)} : Use after pipe (${cmdOut("|")}) to paginate output of previous command. [space] to continue. Esc, ctrl-c, or q to quit
-- commandname | ${cmdOut("grep","filterexpression",theLength-14)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
-- commandname ${cmdOut(">",'filename.html',theLength-12)} : Output commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
+*** ${hiliteOut("Terminal commands")} ***
+${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
+${cmdOut("exit","",theLength)} : End terminal session. Returns this browser window to GUI browsing mode
+${cmdOut("info","[news|versions|bugs|todo]",theLength)} : Display the latest news, version history/changelog, known bugs, and the developer's to-do list.
+${cmdOut("clear","",theLength)} : Clear the terminal output
+${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
+${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
+${cmdOut("beep","",theLength)} : Plays the system bell (ctrl-G)
+${cmdOut("options","[parameter [value]]",theLength)} : Manually set options (given below) from the command line. Type "${cmdOut("help")} ${cmdOut("options")}" for details. 
+commandname | ${cmdOut("more","",theLength-14)} : Use after pipe (${cmdOut("|")}) to paginate output of previous command. [space] to continue. Esc, ctrl-c, or q to quit
+commandname | ${cmdOut("grep","filterexpression",theLength-14)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
+commandname ${cmdOut(">",'filename.html',theLength-12)} : Output commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
-Controlling this terminal:
-- ${cmdOut("help","[commandname]",theLength)} : Show this help message, or detailed help on commandname
-- ${cmdOut("exit","",theLength)} : End session and return this browser window to GUI browing mode
-- ${cmdOut("info","[news|versions|bugs|todo]",theLength)} : Display the latest news, version history/changelog, known bugs, and the developer's to-do list.
-- ${cmdOut("clear","",theLength)} : Clear the terminal output
-- ${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
-- ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
-- ${cmdOut("beep","",theLength)} : Plays the system bell (ctrl-G)
-- ${cmdOut("options","[parameter [value]]",theLength)} : Manually set URL parameter options (given below) from the command line. Type "${cmdOut("help")} ${cmdOut("options")}" for details. 
-
-Optional startup URL paramaters (starred value is the default if unspecified):
-- ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
-- ${hiliteOut("prompt")}=[${optionHilite("prompt","unix|pet|apple")}]                    : Change style of command prompt to match various advanced platforms
-- ${hiliteOut("crt")}=[${optionHilite("crt","bw|green|amber")}]                       : Choose between popular CRT colors. There may be some others available
-- ${hiliteOut("allcaps")}=[${optionHilite("allcaps","false|true")}]                       : Force all uppercase text for that vintage 1980 personal computer experience
-- ${hiliteOut("nobeep")}=[${optionHilite("nobeep","false|true")}]                        : [sigh] Yes... you can disable the error beep if you absolutely have to. You're no fun. 
+*** ${hiliteOut("Options")} - can be set with ${hiliteOut("options")} command, or passed as URL parameters to this page (starred value is the default if left unspecified) ***
+${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
+${hiliteOut("prompt")}=[${optionHilite("prompt","unix|pet|apple")}]                    : Change style of command prompt to match various advanced platforms
+${hiliteOut("crt")}=[${optionHilite("crt","bw|green|amber")}]                       : Choose between popular CRT colors. There may be some others available
+${hiliteOut("allcaps")}=[${optionHilite("allcaps","false|true")}]                       : Force all uppercase text for that vintage 1980 personal computer experience
+${hiliteOut("nobeep")}=[${optionHilite("nobeep","false|true")}]                        : [sigh] Yes... you can disable the error beep if you absolutely have to. You're no fun. 
 `;
             } else
 
@@ -1516,7 +1519,7 @@ Plays the system bell (ctrl-G).`,
 
     hint: {
         man: () => `There is no man page for hint.`,
-        do: () => {
+        do: (all) => {
             let hints = [`If you ${cmdOut("load")} a can of URLs, you do so at your own risk.`,
                 "You can do as the su say, not as the su do.",
                 "Don't be startled by hollow voices. It's not personal.",
@@ -1531,13 +1534,21 @@ Plays the system bell (ctrl-G).`,
                 "This even works on September 19.",
                 "Who speaks short-shorts? I speak short-shorts!",
                 "I'd show you all the bells and whistles, but I have no whistles.",
-                "Is there an echo in here, or is it just me? Yes—there's an echo."
+                "Is there an echo in here, or is it just me? Yes—there's an echo.",
+                "You know, there's more than one hint.",
+                "Curiosity found what the bunny hid."
             ];
+        if (all=="-a" || all=="--all") { return hints.join("\n");} else {
 
             index = Math.floor(Math.random() * hints.length);
-            return hints[index];
+            return hints[index];}
         }
     },
+
+  hints: {
+        man: () => `Show all hints at once. You're no fun.`,
+        do: () => {return commands.hint.do("--all");}
+  },
 
     /*  crt: (color) => {setCrt(color);
          },*/
@@ -2045,7 +2056,7 @@ source = html.replace(/<|>|\&/gi, function(matched){
 
                 updatePrompt();
                 if (content && !gotFromCache) {
-                    addOutput('<!-- span class="dashicons dashicons-admin-site" style="font-size:.7rem"> </span -->' + url + " loaded, " + content.length + " bytes received. Type '" +  cmdOut("display")+"' to view.");
+                    addOutput('<!-- span class="dashicons dashicons-admin-site" style="font-size:.7rem"> </span -->' + url + " loaded, " + content.length + " bytes received. Type '" +  cmdOut("display")+"' or '" +  cmdOut("display")+" | "+ cmdOut("more")+"' to view.");
                 }
                 thisOutput = (addToHistory || reload) ? "" : ("\n" + (content || 'Error: No content processed')); /* don't show on load or reload; make them use Display. Should really have a separate parameter to pass explicitly telling it whether to display or not, but for now, it's ok to do it this way. */
                 return thisOutput;
