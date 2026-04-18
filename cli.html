@@ -75,7 +75,7 @@ let languages = {
         "cd": "follow",
         "setopt": "options",
         "bell":"beep",
-    "nano":"source"
+        "nano":"source"
     },
     "basic": {
         "load": "load",
@@ -87,6 +87,8 @@ let languages = {
         "goto": "follow",
         "poke": "options",
         "restart": "reboot",
+    "rem":"hint",
+    "rems":"hints",
     "hgr2":"image",
 "list":"source",
     "sysinfo":"info",
@@ -107,6 +109,7 @@ let languages = {
         "epgray": "grep",
         "elphay": "help",
         "inthay": "hint",
+        "intshay": "hints",
         "inkslay": "links",
         "oremay": "more",
         "eloadray": "reload",
@@ -132,6 +135,8 @@ let info={
 `,
 versions:()=> `
 Version History:
+2026apr17 - add ?cmd= URL parameter to allow execution of commands upon loading, and easter egg where if you use --ascii-art, you can enter an image URL instead of just a number from the current page
+2025aug13 - localize some of the commands named in hints
 2025jul10 - visual stuff: reformatted some help, added 'exit' message to startup message and "display | more" to load message.
 2025jun27 - added a way to view all hints
 2025may17 - add viewport meta tag to fix iOS sizing stupidity, hide '0' child div created by chToPixels, added scrollTo after first initialize to fix iOS scrolling stupidity, change info blocks to ()=> functions so can use cmdOut function defined later
@@ -171,6 +176,9 @@ todo:()=>`To Dos:
 11.) Maybe add a 'reset' command to re-run the initialization. 
 12.) Breaks totally if given a bad language name. Fix that, check how it handles other wrong options. 
 13.) Create "help -l [language]" flag to allow viewing help for languages besides the current.  
+14.) If a page has a <nav> section, move it below the body? Maybe separate commands to view body without nav? Maybe commands to show <article>?
+15.) Maybe something to show the doc skeleton to a certain depth?
+16.) Make it detect -a or --ascii-art by leading -, make it handle URL without that flag, and, add to docs. 
 `
 };
 
@@ -1400,10 +1408,11 @@ const commands = {
             if (command == "") {
                 theLength = 30;
                 return `
-Available ${theseOptions["language"]} commands. Options in [brackets] are optional. Use '${cmdOut("help")} commandname' to see more detailed info on a command:
+Available ${theseOptions["language"]} commands. 
+Options in [brackets] are optional.
 
 *** ${hiliteOut("Loading and viewing web pages")} ***
-${cmdOut("display","",theLength)} : Display the currently loaded page
+${cmdOut("display","[url]",theLength)} : Display the currently loaded page, or load and display the page at url
 ${cmdOut("images","[[-a, --ascii-art] imagenumber]",theLength)} : Show a numbered list of all images in the currently loaded page, or include number to show a single image by its imagenumber. Optional -a flag displays output in ASCII-art mode.
 ${cmdOut("where","",theLength)} : Display the URL of the currently loaded page
 ${cmdOut("source","",theLength)} : Display the source HTML code of the currently loaded page
@@ -1427,7 +1436,8 @@ commandname | ${cmdOut("more","",theLength-14)} : Use after pipe (${cmdOut("|")}
 commandname | ${cmdOut("grep","filterexpression",theLength-14)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
 commandname ${cmdOut(">",'filename.html',theLength-12)} : Output commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
-*** ${hiliteOut("Options")} - can be set with ${hiliteOut("options")} command, or passed as URL parameters to this page (starred value is the default if left unspecified) ***
+*** ${hiliteOut("Options")} ***
+These can be set with the ${hiliteOut("options")} command, or passed as URL parameters to this page. Starred value is the default if not specified.
 ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
 ${hiliteOut("prompt")}=[${optionHilite("prompt","unix|pet|apple")}]                    : Change style of command prompt to match various advanced platforms
 ${hiliteOut("crt")}=[${optionHilite("crt","bw|green|amber")}]                       : Choose between popular CRT colors. There may be some others available
@@ -1520,7 +1530,7 @@ Plays the system bell (ctrl-G).`,
     hint: {
         man: () => `There is no man page for hint.`,
         do: (all) => {
-            let hints = [`If you ${cmdOut("load")} a can of URLs, you do so at your own risk.`,
+            let hints = [`If you ${cmdInLang("load")} a can of URLs, you do so at your own risk.`,
                 "You can do as the su say, not as the su do.",
                 "Don't be startled by hollow voices. It's not personal.",
                 "There are things here Indiana Jones would tremble in fear of.",
@@ -1528,15 +1538,15 @@ Plays the system bell (ctrl-G).`,
                 "For every screen, there is an inversion. (Turn, turn, turn.)",
                 "Yes, Virginia, there is a Commodore 64 screen setting.",
                 "We can't play snakes & ladders, because we have no ladders.",
-                "The mercy of the software engineer is bountiful. You shouldn't need a password for a sandwich.",
+                "The mercy of the software engineer is bountiful. You shouldn't need a password for a sandwich.", /* ??? */
                 "Ask not for whom the terminal bell tolls. It tolls for G.",
                 "Homo eruditus Latine loquitur.",
-                "This even works on September 19.",
+                "This even works on September 19.", /* talk like a pirate day */
                 "Who speaks short-shorts? I speak short-shorts!",
                 "I'd show you all the bells and whistles, but I have no whistles.",
-                "Is there an echo in here, or is it just me? Yes—there's an echo.",
-                "You know, there's more than one hint.",
-                "Curiosity found what the bunny hid."
+                "Is there an "+cmdInLang("echo")+" in here, or is it just me? Yes—there's an "+cmdInLang("echo")+".", 
+                "You know, there's more than one "+cmdInLang("hint")+".",
+                "Curiosity found what the holiday bunny hid." /* easter egg */
             ];
         if (all=="-a" || all=="--all") { return hints.join("\n");} else {
 
@@ -1729,16 +1739,21 @@ else
  {
 
             num = isNaN(param1) ? param2 : param1;
+            notANum=isNaN(num);
             ascii = isNaN(param1) ? (param1 == "-a" || param1 == "--ascii-art") : param2;
             if (isNaN(param1) && !["-a", "--ascii-art"].includes(param1)) {
                 return "unrecognized option: " + param1;
             }
             if (imageArray[num] && imageArray[num]["url"]) {
                 imageUrl = imageArray[num]["url"];
-            } else {
-                return "Invalid image number: " + num;
+            } else  {if (notANum) {
+                imageUrl = num;
             }
 
+            else {
+                return "Invalid image number: " + num;
+            } 
+                    }
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
@@ -2328,6 +2343,7 @@ function addDicts() /* yep, I hid more down here */ {
             "grep": "grep",
             "auxilium": "help",
             "admonitus": "hint",
+            "admonitii": "hints",
             "nexuum": "links",
             "plus": "more",
             "optiones": "options",
@@ -2352,6 +2368,7 @@ function addDicts() /* yep, I hid more down here */ {
             "/": "grep",
             "?": "help",
             ";": "hint",
+            ";;": "hints",
             "+": "links",
             "&": "more",
             "~": "options",
@@ -2376,6 +2393,7 @@ function addDicts() /* yep, I hid more down here */ {
             "plunder": "grep",
             "shanties": "help",
             "dubloon": "hint",
+            "dubloons": "hints",
             "booty": "links",
             "spyglass": "more",
             "armaments": "options",
@@ -2621,6 +2639,42 @@ function doCommand(command) {
     return commands[command]["do"] || commands[command];
 }
 
+async function runCommandsFromQueryString() {
+    const params = new URLSearchParams(window.location.search);
+    const cmdParam = params.get('cmd');
+
+    if (!cmdParam) return;
+
+    const commands = cmdParam
+        .split(',')
+        .map(cmd => cmd.trim())
+        .filter(cmd => cmd.length > 0);
+
+    for (const cmd of commands) {
+        commandInput.textContent = "\n"+cmd;
+
+        const commandLine = commandInput.textContent.trim();
+        commandInput.textContent = '';
+
+        if (commandLine) {
+            commandHistory.push(commandLine);
+            historyIndex = -1;
+            addOutput(`\n${promptSpan.textContent}\n${commandLine}\n`); //For some reason need \n here. 
+
+            const result = await executeCommand(commandLine);
+            if (result) {
+                addOutput(result);
+            }
+
+            if (!currentMoreOutput) {
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+    }
+}
+
+
+
 
 initialize();
     window.scrollTo({
@@ -2629,7 +2683,10 @@ initialize();
   behavior: 'smooth'
 });
 
-  
+ window.addEventListener('load', async () => {
+     await setTimeout(() => { runCommandsFromQueryString(); }, 1000); // wait two seconds, let startup happen.
+});
+
 
 // Check for updates every hour
 
