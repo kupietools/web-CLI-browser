@@ -2635,8 +2635,10 @@ async function initialize() {
     }
     originalURL = startUrl;
     await doCommand("load")(theseOptions["starturl"] ? theseOptions["starturl"] : startUrl);
+   
     /* addOutput("Enter 'display' to view the page or 'links' to see available links."); */
     toggleInputLine(true);
+ await runCommandsFromQueryString();
 }
 
 
@@ -2672,9 +2674,9 @@ initialize();
   behavior: 'smooth'
 });
 
- window.addEventListener('load', async () => {
+ /* window.addEventListener('load', async () => {
      await setTimeout(() => { runCommandsFromQueryString(); }, 1000); // wait two seconds, let startup happen.
-});
+}); */
 
 
 // Check for updates every hour
