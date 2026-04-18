@@ -135,7 +135,7 @@ let info={
 `,
 versions:()=> `
 Version History:
-2026apr17 - add ?cmd= URL parameter to allow execution of commands upon loading, and easter egg where if you use --ascii-art, you can enter an image URL instead of just a number from the current page
+2026apr17 - add ?cmd= URL parameter to allow execution of commands upon loading, and easter egg where if you use --ascii-art, you can enter an image URL instead of just a number from the current page, make it scale images only if they exceed the horizontal width of the page, added cmd URL parameter and command to spawn subprocesses, added CSS to show "click to enable" message when CLI paused by clicking outside window. Fix options command so "option parametername" without a value specified displays the current value for that parameter, bugfix so there aren't multiple 'enter' key handlers, refactor enter key handling to enterCommandInput function so can use with ?cmd= URL param.
 2025aug13 - localize some of the commands named in hints
 2025jul10 - visual stuff: reformatted some help, added 'exit' message to startup message and "display | more" to load message.
 2025jun27 - added a way to view all hints
@@ -179,7 +179,8 @@ todo:()=>`To Dos:
 14.) If a page has a <nav> section, move it below the body? Maybe separate commands to view body without nav? Maybe commands to show <article>?
 15.) Maybe something to show the doc skeleton to a certain depth?
 16.) Make it detect -a or --ascii-art by leading -, make it handle URL without that flag, and, add to docs. 
-`
+17.) Right now it lets you load images just like web pages, both with "open" and following links. Make it either display those or not allow that.
+18.) Make it obey redirect meta tags?
 };
 
 
@@ -399,6 +400,11 @@ border-radius:3px;
     #input-line.hidden {
     display: none;
 }
+
+#command-input:not(:focus)::before {
+	content: '[Paused. Click to enable]';
+color: #666;
+}
     </style>
 </head>
 <body><div id="terminal"><div class="output">&nbsp;<br>*** KUPIETZ ARTS+CODE ***<p>&nbsp;&nbsp;&nbsp;&nbsp;7167 BYTES FREE<p>
@@ -520,9 +526,7 @@ function updateCursor(e = {}) {
 updateCursor();
 /* end code to handle moving cursor with mouseclicks */
 
-commandInput.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Prevent default newline
+async function enterCommandInput() {
         const commandLine = commandInput.textContent.trim();
         commandInput.textContent = ''; // Clear the input
 
@@ -547,8 +551,8 @@ commandInput.addEventListener('keydown', async (e) => {
                 terminal.scrollTop = terminal.scrollHeight;
             }
         }
-    }
-});
+}
+
 
 // Optional: Prevent pasting formatted text
 commandInput.addEventListener('paste', (e) => {
@@ -1293,7 +1297,7 @@ function optionHilite(command, optionsText, delimiter = "|") {
     let output = "";
     for (opt in opts) {
 
-        output = ((output !== "") ? (output + delimiter) : "") + ((opts[opt] == defaultOptions[command].toString()) ? (opts[opt].toUpperCase() + "*") : opts[opt]);
+        output = ((output !== "") ? (output + delimiter) : "") + ((opts[opt] == defaultOptions[command].toString()) ? (hiliteOut(opts[opt] + "*")) : opts[opt]);
 
     }
     return output;
@@ -1400,6 +1404,18 @@ const commands = {
         }
     },
 
+    cmd: { 
+        man: () => `USAGE: ${cmdOut("cmd")} [command]
+        
+        Opens a child CLI process and optionally runs a command. This parent page can also accept ${hiliteOut("?cmd=")} URL parameters.`,
+        do: (command) => {
+       
+
+        return `<div style="display:flex; margin:0; padding:0; resize:both; overflow:hidden; height:15rem; width:clamp(260px,40vw,40vw); "><iframe src="?starturl=${currentUrl+(command?"&cmd="+command:"")}"  style="flex-grow:1; width:auto; height:auto; pointer-events: auto;"></iframe></div>`;
+
+        }
+    },
+
     help: {
         man: () => `Unfortunately the ${cmdInLang("help")} page for '${cmdOut("help")}' has been recalled by the Department Of Redundancy Department.
         
@@ -1431,13 +1447,14 @@ ${cmdOut("clear","",theLength)} : Clear the terminal output
 ${cmdOut("reboot","",theLength)} : Reboot the terminal with its original startup options
 ${cmdOut("hint","",theLength)} : A mysterious command, I don't know what it does
 ${cmdOut("beep","",theLength)} : Plays the system bell (ctrl-G)
+${cmdOut("cmd","[command]",theLength)} : Opens a child CLI process and optionally runs a command. This parent page can also accept ${hiliteOut("?cmd=")} URL parameters.
 ${cmdOut("options","[parameter [value]]",theLength)} : Manually set options (given below) from the command line. Type "${cmdOut("help")} ${cmdOut("options")}" for details. 
 commandname | ${cmdOut("more","",theLength-14)} : Use after pipe (${cmdOut("|")}) to paginate output of previous command. [space] to continue. Esc, ctrl-c, or q to quit
 commandname | ${cmdOut("grep","filterexpression",theLength-14)} : Use after pipe (${cmdOut("|")}) to filter output of previous command by regular expression. Case-insensitive, no delimiters
 commandname ${cmdOut(">",'filename.html',theLength-12)} : Output commandname's output to a file download, rather than ${theseOptions["language"]=="unix"?"STDOUT":"onscreen"}
 
 *** ${hiliteOut("Options")} ***
-These can be set with the ${hiliteOut("options")} command, or passed as URL parameters to this page. Starred value is the default if not specified.
+These can be set with the ${hiliteOut("options")} command, or passed as URL parameters to this page. Starred value is the default value if none is specified.
 ${hiliteOut("language")}=[${optionHilite("language","cli-html|unix|basic|pig-latin")}]   : Change commands to match various platforms. This way you unix geeks don't have to fight your natural urge to type 'ls'
 ${hiliteOut("prompt")}=[${optionHilite("prompt","unix|pet|apple")}]                    : Change style of command prompt to match various advanced platforms
 ${hiliteOut("crt")}=[${optionHilite("crt","bw|green|amber")}]                       : Choose between popular CRT colors. There may be some others available
@@ -1476,7 +1493,8 @@ Plays the system bell (ctrl-G).`,
             This program allows you to initially set options by including URL parameters when you first call it. (see '${cmdOut("help")}' command.) After the terminal starts, you can view or change the same set of options from the command line by using this command. '${cmdOut("options")}' alone will list the currently set options. '${cmdOut("options")} parametername' will show you the current setting for parametername. '${cmdOut("options")} parametername value' will set parametername to value. You also can pass any option a value of "default" to return it to whatever the original  value was when the session first began.`,
 
         do: (option, value) => {
-            if (option) {
+            if (option && !value) {return option + " is '" + theseOptions[option] + "'";}
+            else if (option) {
                 const queryString = window.location.search;
                 const urlParams = new URLSearchParams(queryString);
                 value = (value == "default") ? (urlParams.get(option) ? urlParams.get(option) : defaultOptions[option]) : value;
@@ -1649,8 +1667,12 @@ Plays the system bell (ctrl-G).`,
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const scale = Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight);
-                    /* scale if image > 98% of window in either dimension */
+                    const scale = 1.05 * img.width / window.innerWidth;
+         
+                    /* was: 
+                     * Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight); to
+                     * to scale if image > 98% of window in either dimension 
+                     * but I decided I don't mind if they have to scroll to see it, I just don't want it wrapping horizontally */
 
                     const blockWidth = chWidth * Math.max(scale, 1);
                     const blockHeight = chWidth * 2 * Math.max(scale, 1);
@@ -2204,25 +2226,9 @@ let sigOut = e.key==='c'?SIGNALS.SIGINT:SIGNALS.SIGTSTP;
 });
 
 commandInput.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const commandLine = commandInput.textContent.trim();
-        commandInput.textContent = '';
-
-        if (commandLine) {
-            commandHistory.push(commandLine);
-            historyIndex = -1;
-            addOutput(`${promptSpan.textContent}${commandLine}`);
-
-            const result = await executeCommand(commandLine);
-            if (result) {
-                addOutput(result);
-            }
-
-            if (!currentMoreOutput) {
-                terminal.scrollTop = terminal.scrollHeight;
-            }
-        }
+ if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent default newline
+    await  enterCommandInput();
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (historyIndex === -1) {
@@ -2651,25 +2657,8 @@ async function runCommandsFromQueryString() {
         .filter(cmd => cmd.length > 0);
 
     for (const cmd of commands) {
-        commandInput.textContent = "\n"+cmd;
-
-        const commandLine = commandInput.textContent.trim();
-        commandInput.textContent = '';
-
-        if (commandLine) {
-            commandHistory.push(commandLine);
-            historyIndex = -1;
-            addOutput(`\n${promptSpan.textContent}\n${commandLine}\n`); //For some reason need \n here. 
-
-            const result = await executeCommand(commandLine);
-            if (result) {
-                addOutput(result);
-            }
-
-            if (!currentMoreOutput) {
-                terminal.scrollTop = terminal.scrollHeight;
-            }
-        }
+        commandInput.textContent = cmd;
+  await  enterCommandInput();
     }
 }
 
