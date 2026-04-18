@@ -135,7 +135,7 @@ let info={
 `,
 versions:()=> `
 Version History:
-2026apr17 - add ?cmd= URL parameter to allow execution of commands upon loading, and easter egg where if you use --ascii-art, you can enter an image URL instead of just a number from the current page, make it scale images only if they exceed the horizontal width of the page, added cmd URL parameter and command to spawn subprocesses, added CSS to show "click to enable" message when CLI paused by clicking outside window. Fix options command so "option parametername" without a value specified displays the current value for that parameter, bugfix so there aren't multiple 'enter' key handlers, refactor enter key handling to enterCommandInput function so can use with ?cmd= URL param.
+2026apr17 - add ?cmd= URL parameter to allow execution of commands upon loading, and easter egg where if you use --ascii-art, you can enter an image URL instead of just a number from the current page, make it scale images only if they exceed the horizontal width of the page, added cmd URL parameter and command to spawn subprocesses, added CSS to show "click to enable" message when CLI paused by clicking outside window. Fix options command so "option parametername" without a value specified displays the current value for that parameter, bugfix so there aren't multiple 'enter' key handlers, refactor enter key handling to enterCommandInput function so can use with ?cmd= URL param, update deprecated 'image' command to directly call 'images', slightly change ASCII art brightness boost because I like it better at 230 than 200.
 2025aug13 - localize some of the commands named in hints
 2025jul10 - visual stuff: reformatted some help, added 'exit' message to startup message and "display | more" to load message.
 2025jun27 - added a way to view all hints
@@ -1471,13 +1471,13 @@ ${hiliteOut("nobeep")}=[${optionHilite("nobeep","false|true")}]                 
             }
         }
     },
-source: {man: () => `USAGE: ${cmdOut("source")}
+    source: {man: () => `USAGE: ${cmdOut("source")}
 
-Shows currently loaded page source.`,
+    Shows currently loaded page source.`,
     do: () => {return source; /* this is a special case since outputting HTM */}},
     beep: {man: () => `USAGE: ${cmdOut("beep")}
 
-Plays the system bell (ctrl-G).`,
+    Plays the system bell (ctrl-G).`,
     do: () => {
         doBeep();
     }},
@@ -1647,94 +1647,7 @@ Plays the system bell (ctrl-G).`,
 
             Loads the image indicated by imagenumber, the number of an image in the currently loaded page. To see these numbers, use the '${cmdOut("images")}' command.`,
 
-        do: async (param1, param2) => {
-
-            num = isNaN(param1) ? param2 : param1;
-            ascii = isNaN(param1) ? (param1 == "-a" || param1 == "--ascii-art") : param2;
-            if (isNaN(param1) && !["-a", "--ascii-art"].includes(param1)) {
-                return "unrecognized option: " + param1;
-            }
-            if (imageArray[num] && imageArray[num]["url"]) {
-                imageUrl = imageArray[num]["url"];
-            } else {
-                return "Invalid image number: " + num;
-            }
-
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const scale = 1.05 * img.width / window.innerWidth;
-         
-                    /* was: 
-                     * Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight); to
-                     * to scale if image > 98% of window in either dimension 
-                     * but I decided I don't mind if they have to scroll to see it, I just don't want it wrapping horizontally */
-
-                    const blockWidth = chWidth * Math.max(scale, 1);
-                    const blockHeight = chWidth * 2 * Math.max(scale, 1);
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    /* remember if the console is open, it will scale if the vertical direction is bigger than the remaining available window height */
-
-                    const blocksAcross = Math.floor(img.width / blockWidth);
-                    const blocksDown = Math.floor(img.height / blockHeight);
-
-                    // ASCII chars from darkest to brightest
-                    const asciiChars = ' .`\'",-:;~>+!?░@l#$&▒§¶MWB▓█';
-                    /* alternative character sets: note, some incompatible with all caps display
-                     Original :".-░*%#@$&▒§¶▓█';
-                    " .'`^\",_-:;~>+!/?1}(|l[irxczb%khmwqpdXQ0OZ#MWB@";
-                    " .'`^\",_-:;~><+?][}1(|/Il!itfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@"; */
-                    let result = '';
-
-                    for (let y = 0; y < blocksDown; y++) {
-                        for (let x = 0; x < blocksAcross; x++) {
-                            const data = ctx.getImageData(x * blockWidth, y * blockHeight, blockWidth, blockHeight).data;
-
-                            let r = 0,
-                                g = 0,
-                                b = 0;
-                            for (let i = 0; i < data.length; i += 4) {
-                                r += data[i];
-                                g += data[i + 1];
-                                b += data[i + 2];
-                            }
-
-                            const pixelCount = (blockWidth * blockHeight);
-                            r = Math.floor(r / pixelCount);
-                            g = Math.floor(g / pixelCount);
-                            b = Math.floor(b / pixelCount);
-                            const asciiMax = 200 / Math.max(r, g, b) //upscale displayed color brightness a bit for ascii
-                            let ra = Math.floor(r * asciiMax);
-                            let ga = Math.floor(g * asciiMax);
-                            let ba = Math.floor(b * asciiMax);
-
-                            // Calculate brightness (0-255)
-                            const brightness = (r + g + b) / 3; //upscale brightness:  Math.min((r + g + b) / 3,255); 
-
-                            // Map brightness to ASCII character
-                            const charIndex = Math.floor(brightness / 255 * (asciiChars.length - 1));
-                            const char = asciiChars[charIndex];
-
-                            // Add colored character
-                            result += ascii ? `<span class="termImgAscii" ${ascii?`style="color: rgb(${ra},${ga},${ba})"`:`style="color: rgb(${r},${g},${b})"`}>${char}</span>` : `<span class="termImg" style="color: rgb(${r},${g},${b})">█</span>`;
-                        }
-                        result += '<br>';
-                    }
-                    result = `<div class="cliImgOut${ascii?'Ascii':''}">${result}${scale>1?"[Scaled "+Math.floor(100*(1/scale))+"%]":""}</div>`
-                    resolve(result);
-                };
-
-                img.onerror = reject;
-                img.src = imageUrl;
-            });
-
-        }
+        do: async (param1, param2) => {return commands["images"]["do"](param1,param2);}
     }
 
 
@@ -1783,8 +1696,12 @@ else
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const scale = Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight);
-                    /* scale if image > 98% of window in either dimension */
+                    const scale = 1.05 * img.width / window.innerWidth;
+         
+                    /* was: 
+                     * Math.max(1.05 * img.width / window.innerWidth, 1.05 * img.height / window.innerHeight); to
+                     * to scale if image > 98% of window in either dimension 
+                     * but I decided I don't mind if they have to scroll to see it, I just don't want it wrapping horizontally */
 
                     const blockWidth = chWidth * Math.max(scale, 1);
                     const blockHeight = chWidth * 2 * Math.max(scale, 1);
@@ -1797,7 +1714,15 @@ else
                     const blocksDown = Math.floor(img.height / blockHeight);
 
                     // ASCII chars from darkest to brightest
-                    const asciiChars = ' .`\'",-:;~>+!?░@l#$&▒§¶MWB▓█';
+                    const asciiChars = '   ..``\'\':"«»=?[]{}()LJ1UTH7YQ2S$EBRM'; //@ sign after $ not quite as good, removed.
+                          //prob best so far ' .`\':"»=?]})1JUCTYEMW';
+                // good too ' .`\':"»=?(]{1JUCTYEMW';
+                          //GOOD ' .`\':"»=?]})1TUYFMW';
+//' .`\':;~»=>≤?)1T023YBMW' ok; 
+                // pretty good ' .`\':"»=>≥?]})1TY0MW'; 
+                //' .\'`^",:;!~_-+<>=?][}{1)(|\/TFYJCLQ0OZMW'; 
+                          //' .\'`^",:;!~_-+<>=?][}{1)(|\/TFYJCLQ0OZMW&8%B@$'; 
+                //' .`\'",-:;~>+!?░@l#$&▒§¶MWB▓█'; - orig good with 230 brightness adj
                     /* alternative character sets: note, some incompatible with all caps display
                      Original :".-░*%#@$&▒§¶▓█';
                     " .'`^\",_-:;~>+!/?1}(|l[irxczb%khmwqpdXQ0OZ#MWB@";
@@ -1821,7 +1746,7 @@ else
                             r = Math.floor(r / pixelCount);
                             g = Math.floor(g / pixelCount);
                             b = Math.floor(b / pixelCount);
-                            const asciiMax = 200 / Math.max(r, g, b) //upscale displayed color brightness a bit for ascii
+                            const asciiMax = 230 / Math.max(r, g, b) //upscale displayed color brightness a bit for ascii. Was 200 but changed to 230 on 2026apr18
                             let ra = Math.floor(r * asciiMax);
                             let ga = Math.floor(g * asciiMax);
                             let ba = Math.floor(b * asciiMax);
@@ -2673,10 +2598,6 @@ initialize();
   left: 0,
   behavior: 'smooth'
 });
-
- /* window.addEventListener('load', async () => {
-     await setTimeout(() => { runCommandsFromQueryString(); }, 1000); // wait two seconds, let startup happen.
-}); */
 
 
 // Check for updates every hour
